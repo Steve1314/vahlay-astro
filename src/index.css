@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Add this to your global CSS (index.css or App.css) */
+html {
+  scroll-behavior: smooth;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('/fonts/Poppins-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Batangas';
+  src: url('/fonts/Batangas-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* Add some fallback fonts for better performance */
+body {
+  font-family: 'Poppins', sans-serif;
+}
+/* Raindrop animation background */
+.raindrop-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.raindrop-background::before {
+  content: '';
+  position: absolute;
+  top: 0px; /* Start above the section */
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle, rgba(230, 173, 173, 0.6) 30%, transparent 60%);
+  animation: raindrop-fall 5s linear infinite;
+}
+
+@keyframes raindrop-fall {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100vh); /* Move downwards */
+  }
+}
+
+/* Fade-in Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  opacity: 0;
+  animation: fadeIn 0.5s forwards;
+}
+
+.animate-fade-in.delay-200 {
+  animation-delay: 0.2s;
+}
+
+.animate-fade-in.delay-300 {
+  animation-delay: 0.3s;
+}
+
+.animate-fade-in.delay-500 {
+  animation-delay: 0.5s;
+}
+
+.animate-fade-in.delay-700 {
+  animation-delay: 0.7s;
+}
+
+.animate-fade-in.delay-900 {
+  animation-delay: 0.9s;
+}
+@layer utilities {
+  @keyframes oscillate {
+    0% {
+      transform: rotate(-360deg);
+    }
+    50% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(-360deg);
+    }
+  }
+
+  .animate-oscillate {
+    animation: oscillate 10s ease-in-out infinite;
+  }
+}
