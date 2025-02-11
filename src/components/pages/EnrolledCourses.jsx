@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { db } from "../../firebaseConfig"; // Firebase configuration file
+import ActiveLink from "./ActiveLink"; // Custom Link component
 
 import { PieChart, Pie, Cell } from "recharts";
 
@@ -230,6 +231,8 @@ const EnrollCourse = () => {
         </button>
         <h2 className="text-2xl font-semibold text-red-600 mb-4">Your Courses</h2>
 
+       
+
         {/* Show message if no courses are enrolled */}
         {courses.length === 0 ? (
           <div className="text-center p-8 bg-red-50 border border-red-200 rounded-lg shadow-md">
@@ -271,6 +274,10 @@ const EnrollCourse = () => {
                   </button>
                 </div>
               ))}
+<div className="w-full pt-[auto] max-w-lg mx-auto p-2  md:p-5 lg:p-4 ">
+  <ActiveLink />
+</div>
+
             </div>
 
             {/* Desktop: Table View */}
@@ -316,10 +323,14 @@ const EnrollCourse = () => {
                   ))}
                 </tbody>
               </table>
+            
+              <ActiveLink/>
             </div>
           </>
         )}
       </main>
+
+
 
     </div>
   );

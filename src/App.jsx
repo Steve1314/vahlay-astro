@@ -95,34 +95,11 @@ import AdminVedioOrder from "./components/pages/AdminVedioOrder"
  
  
 const App = () => {
-  useEffect(() => {
-    // Disable right-click
-    const disableRightClick = (event) => {
-      event.preventDefault();
-    };
  
-    // Disable certain keyboard shortcuts
-    const disableShortcuts = (event) => {
-      if (
-        event.ctrlKey &&
-        (event.key === "u" || event.key === "U" || event.key === "i" || event.key === "I" || event.key === "s" || event.key === "S")
-      ) {
-        event.preventDefault();
-      }
-    };
- 
-    document.addEventListener("contextmenu", disableRightClick);
-    document.addEventListener("keydown", disableShortcuts);
- 
-    return () => {
-      document.removeEventListener("contextmenu", disableRightClick);
-      document.removeEventListener("keydown", disableShortcuts);
-    };
-  }, []);
  
   return (
     <Router>
-      <SecurityGuard />
+      {/* <SecurityGuard /> */}
       <div className="flex flex-col min-h-screen">
         <Navbar />
         <ScrollToTop />

@@ -1,136 +1,127 @@
-
-import React, { useState, useEffect } from "react";
-import { collection, getDocs, setDoc, doc } from "firebase/firestore";
-import { db } from "../../firebaseConfig"; // Replace with your Firebase config import
-import { Link } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { db } from "../../firebaseConfig";
+import { collection, addDoc, getDocs, deleteDoc, doc, query, where } from "firebase/firestore";
+import gsap from "gsap";
 import Admin from "./Admin";
 
-const AdminPortal = () => {
-  const [courses, setCourses] = useState([]);
-  const [selectedCourse, setSelectedCourse] = useState("");
-  const [meetingUrl, setMeetingUrl] = useState("");
-  const [meetingStartTime, setMeetingStartTime] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [currentSection, setCurrentSection] = useState(false);
+const App = () => {
+    const [meetingLink, setMeetingLink] = useState(null);
+    const [meetings, setMeetings] = useState([]);
+    const containerRef = useRef(null);
 
+    useEffect(() => {
+        gsap.fromTo(containerRef.current, { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.8 });
+        fetchMeetings();
+    }, []);
 
-  const fetchCourses = async () => {
-    try {
-      const freeCoursesSnapshot = await getDocs(collection(db, "freeCourses"));
-      const freeCourses = freeCoursesSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        type: "free",
-      }));
+    // Authenticate with Backend
+    const authenticate = async () => {
+        try {
+            const response = await fetch("http://localhost:5000/meeting/authenticate");
+            const data = await response.json();
+            alert(data.message);
+        } catch (error) {
+            console.error("Error authenticating:", error);
+            alert("Failed to authenticate.");
+        }
+    };
 
-      const paidCoursesSnapshot = await getDocs(collection(db, "paidCourses"));
-      const paidCourses = paidCoursesSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        type: "paid",
-      }));
+    // Create a new meeting
+    const createMeeting = async () => {
+        try {
+            const response = await fetch("http://localhost:5000/meeting/create", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" }
+            });
 
-      setCourses([...freeCourses, ...paidCourses]);
-    } catch (error) {
-      console.error("Error fetching courses:", error);
-      alert("Failed to fetch courses. Please try again later.");
-    }
-  };
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
 
-  useEffect(() => {
-    fetchCourses();
-  }, []);
+            const data = await response.json();
+            const meetingURL = data.meetingLink;
+            setMeetingLink(meetingURL);
+            
+            // Store meeting in Firestore with timestamp
+            const docRef = await addDoc(collection(db, "meetings"), {
+                link: meetingURL,
+                createdAt: new Date()
+            });
 
-  const saveMeetingDetails = async () => {
-    if (!selectedCourse || !meetingUrl || !meetingStartTime) {
-      alert("Please select a course, provide a meeting URL, and set a start time.");
-      return;
-    }
+            console.log("Meeting saved:", docRef.id);
+            fetchMeetings();
+        } catch (error) {
+            console.error("Error creating meeting:", error);
+            alert("Failed to create meeting.");
+        }
+    };
 
-    setIsSubmitting(true);
+    // Fetch meetings from Firestore
+    const fetchMeetings = async () => {
+        const querySnapshot = await getDocs(collection(db, "meetings"));
+        const meetingsData = querySnapshot.docs.map(doc => ({ id: doc.id, link: doc.data().link }));
+        setMeetings(meetingsData);
+    };
 
-    try {
-      await setDoc(doc(db, "courseMeetings", selectedCourse), {
-        meetingUrl,
-        meetingStartTime,
-      });
+    // Delete expired meetings
+    const deleteOldMeetings = async () => {
+        const now = new Date();
+        const oldMeetingsQuery = query(collection(db, "meetings"), where("createdAt", "<", new Date(now.getTime() - 24 * 60 * 60 * 1000)));
 
-      alert("Meeting URL and start time saved successfully!");
-      setSelectedCourse("");
-      setMeetingUrl("");
-      setMeetingStartTime("");
-    } catch (error) {
-      console.error("Error saving meeting details:", error);
-      alert("Failed to save meeting details.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+        const querySnapshot = await getDocs(oldMeetingsQuery);
+        querySnapshot.forEach(async (doc) => {
+            await deleteDoc(doc.ref);
+            console.log("Deleted expired meeting:", doc.id);
+        });
 
-  return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-white">
+        fetchMeetings();
+    };
+
+    useEffect(() => {
+        deleteOldMeetings();
+    }, []);
+
+    return (
+      <div className="flex flex-col md:flex-row min-h-screen bg-white">
       {/* Sidebar - Always visible on desktop and mobile */}
       <div className="w-full md:w-1/4 bg-white shadow-md">
         <Admin />
       </div>
 
-      <div className="w-full md:w-3/4 px-4 sm:px-6 py-8 mx-auto">
-        <h1 className="text-2xl font-bold text-red-600 text-center mb-4">
-          Admin Portal - Add Meeting Details
-        </h1>
+            {/* Main Content */}
+            <main className="w-3/4 p-8" ref={containerRef}>
+                <h1 className="text-4xl font-bold mb-6">RingCentral Video Meeting</h1>
 
-        <div className="mb-4">
-          <label className="block text-red-700 font-semibold mb-2">Select Course</label>
-          <select
-            className="w-full p-3 border-2 border-red-500 rounded-md"
-            value={selectedCourse}
-            onChange={(e) => setSelectedCourse(e.target.value)}
-          >
-            <option value="">-- Select a Course --</option>
-            {courses.map((course) => (
-              <option key={course.id} value={course.id}>
-                {course.type === "free" ? "🆓" : "💰"} {course.id}
-              </option>
-            ))}
-          </select>
+                <button onClick={createMeeting} className="w-full bg-green-500 hover:bg-green-600 p-3 rounded">
+                    Create Meeting
+                </button>
+
+                {meetingLink && (
+                    <div className="mt-6 bg-gray-800 p-4 rounded-lg shadow-lg">
+                        <p className="text-lg">
+                            🔗 <a href={meetingLink} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">{meetingLink}</a>
+                        </p>
+                    </div>
+                )}
+
+                {/* List of Active Meetings */}
+                <div className="mt-8">
+                    <h2 className="text-2xl font-semibold mb-4">Active Meetings</h2>
+                    {meetings.length > 0 ? (
+                        <ul className="bg-gray-800 p-4 rounded-lg">
+                            {meetings.map(meeting => (
+                                <li key={meeting.id} className="border-b border-gray-700 py-2">
+                                    <a href={meeting.link} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">{meeting.link}</a>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p className="text-gray-400">No active meetings found.</p>
+                    )}
+                </div>
+            </main>
         </div>
-
-        <div className="mb-4">
-          <label className="block text-red-700 font-semibold mb-2">Meeting URL</label>
-          <input
-            type="text"
-            className="w-full p-3 border-2 border-red-500 rounded-md"
-            placeholder="Enter meeting URL"
-            value={meetingUrl}
-            onChange={(e) => setMeetingUrl(e.target.value)}
-          />
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-red-700 font-semibold mb-2">Meeting Start Time</label>
-          <input
-            type="datetime-local"
-            className="w-full p-3 border-2 border-red-500 rounded-md"
-            value={meetingStartTime}
-            onChange={(e) => setMeetingStartTime(e.target.value)}
-          />
-        </div>
-
-        <button
-          className={`w-full p-3 rounded-md text-white font-bold ${isSubmitting
-            ? "bg-red-300 cursor-not-allowed"
-            : "bg-red-600 hover:bg-red-700"
-            }`}
-          onClick={saveMeetingDetails}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? "Saving..." : "Save Meeting Details"}
-        </button>
-      </div>
-    </div>
-
-  );
+    );
 };
 
-export default AdminPortal;
+export default App;
