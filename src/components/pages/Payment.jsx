@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
+import Admin from "./Admin";
 
 const PaymentsList = () => {
   const [payments, setPayments] = useState([]);
@@ -40,68 +41,19 @@ const PaymentsList = () => {
         console.error("Error fetching payments:", error);
         setLoading(false);
       }
-    };
+    };              
 
     fetchPayments();
   }, []);
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen">
-      {/* Sidebar */}
-      <aside
-        className={`w-full h-screen md:w-1/6 bg-red-600 text-white p-4 shadow-lg transition-transform transform ${
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-        } md:relative fixed top-0 left-0 z-10`}
-      >
-        <div className="flex justify-between items-center mb-4 md:mb-0">
-          <h1 className="text-2xl font-bold">Admin Portal</h1>
-          <button
-            onClick={() => setIsSidebarOpen(false)}
-            className="md:hidden text-2xl font-bold"
-          >
-            ✖
-          </button>
-        </div>
-        <ul className="mt-4">
-          <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-            <a href="/adminarticle">Articles</a>
-          </li>
-          <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-            <a href="/admincalendar">Calendar</a>
-          </li>
-          <li className="p-2 hover:bg-white hover:text-red-600 rounded">
-            <a href="/adminsubscribecourselist">Subscribe List</a>
-          </li>
-          <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-            <a href="/addcourse">Add Course</a>
-          </li>
-          <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-            <a href="/addmodule">Add Module</a>
-          </li>
-          <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-            <a href="/addmeeting">Add Live Session</a>
-          </li>
-          <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-            <a href="/admin/addemi">Add EMI Plans</a>
-          </li>
-          <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-            <a href="/admin/emailuserlist">Track EMI Plans</a>
-          </li>
-          <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-            <a href="/payment">Payment List</a>
-          </li>
-        </ul>
-      </aside>
+    <div className="flex flex-col md:flex-row min-h-screen bg-white">
+    {/* Sidebar - Always visible on desktop and mobile */}
+    <div className="w-full md:w-1/4 bg-white shadow-md">
+      <Admin />
+    </div>
 
-      {/* Main Content */}
-      <main className="flex-1 p-6 bg-white overflow-auto">
-        <div className="max-w-6xl mx-auto bg-white shadow rounded p-6 border border-red-200">
-          <button
-            onClick={() => setIsSidebarOpen(true)}
-            className="md:hidden mb-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors duration-200"
-          >
-            Open Menu
-          </button>
+    <div className="w-full md:w-3/4 px-4 sm:px-6 py-8 mx-auto">
 
           <h2 className="text-2xl font-bold mb-4 text-red-600 text-center">
             Payments List
@@ -190,7 +142,7 @@ const PaymentsList = () => {
             </>
           )}
         </div>
-      </main>
+      
     </div>
   );
 };

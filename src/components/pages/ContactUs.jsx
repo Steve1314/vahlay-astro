@@ -1,5 +1,7 @@
 
 import React, { useState } from "react";
+import { collection, addDoc, getFirestore, serverTimestamp } from "firebase/firestore";
+
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -9,6 +11,9 @@ const Contact = () => {
     message: "",
   });
 
+  const db = getFirestore(); // Initialize Firestore
+
+
   const [isSent, setIsSent] = useState(false);
   const [isError, setIsError] = useState(false);
 
@@ -17,40 +22,46 @@ const Contact = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const formEndpoint = "https://api.web3forms.com/submit";
-    const accessKey = "afc0705d-3423-48a7-a14d-e83d4ffd11e0";
+ 
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  const formEndpoint = "https://api.web3forms.com/submit";
+  const accessKey = import.meta.env.VITE_WEB3FORMS_ACCESS_KEY;
 
-    const data = {
-      access_key: accessKey,
-      ...formData,
-    };
+  const data = {
+    access_key: accessKey,
+    ...formData,
+  };
 
-    try {
-      const response = await fetch(formEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
+  try {
+    // ✅ Store Contact Inquiry in Firestore
+    await addDoc(collection(db, "Astro_Contact"), {
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      message: formData.message,
+      timestamp: serverTimestamp(), // Store time of submission
+    });
 
-      if (response.ok) {
-        setIsSent(true);
-        alert("Message Sent Successfully");
-        setFormData({
-          name: "",
-          email: "",
-          phone: "",
-          message: "",
-        });
-      } else {
-        setIsError(true);
-      }
-    } catch (error) {
-      console.error("Form submission error:", error);
+    // ✅ Send form data to Web3Forms for email notification
+    const response = await fetch(formEndpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    if (response.ok) {
+      setIsSent(true);
+      alert("Message Sent Successfully");
+      setFormData({ name: "", email: "", phone: "", message: "" });
+    } else {
       setIsError(true);
     }
-  };
+  } catch (error) {
+    console.error("Form submission error:", error);
+    setIsError(true);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-red-100 via-white to-orange-100 py-16">
@@ -107,7 +118,7 @@ const Contact = () => {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-red-600 focus:outline-none"
+                  className="w-full border rounded-lg px-4 lg:py-2 focus:ring-2 focus:ring-red-600 focus:outline-none"
                   required
                 />
               </div>
@@ -120,7 +131,7 @@ const Contact = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-red-600 focus:outline-none"
+                  className="w-full border rounded-lg px-4 lg:py-2 focus:ring-2 focus:ring-red-600 focus:outline-none"
                   required
                 />
               </div>
@@ -133,7 +144,7 @@ const Contact = () => {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-red-600 focus:outline-none"
+                  className="w-full border rounded-lg px-4 lg:py-2 focus:ring-2 focus:ring-red-600 focus:outline-none"
                   required
                 />
               </div>
@@ -145,7 +156,7 @@ const Contact = () => {
                   name="message"
                   value={formData.message}
                   onChange={handleChange}
-                  className="w-full border rounded-lg px-4 py-2 h-28 focus:ring-2 focus:ring-red-600 focus:outline-none"
+                  className="w-full border rounded-lg px-4 lg:py-2 h-28 focus:ring-2 focus:ring-red-600 focus:outline-none"
                   required
                 ></textarea>
               </div>

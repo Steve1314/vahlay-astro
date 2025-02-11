@@ -4,7 +4,7 @@ import { db } from "../../firebaseConfig";
 import { collection, onSnapshot } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
-
+import Admin from "../pages/Admin";
 const AdminEMIUsers = () => {
   const [emiUsers, setEmiUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,53 +38,12 @@ const AdminEMIUsers = () => {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-white">
-      {/* Sidebar */}
-      <aside
-        className={`w-full h-screen md:w-1/6 bg-red-600 text-white p-4 shadow-lg transition-transform transform ${isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-          } md:relative fixed top-0 left-0 z-10`}
-      >
-        <div className="flex justify-between items-center mb-4 md:mb-0">
-          <h1 className="text-2xl font-bold">Admin Portal</h1>
-          <button
-            onClick={() => setIsSidebarOpen(false)}
-            className="md:hidden text-2xl font-bold"
-          >
-            ✖
-          </button>
-        </div>
-        <ul className="mt-4">
-          <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-            <Link to="/adminarticle">Articles</Link>
-          </li>
-          <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-            <Link to="/admincalendar">Calendar</Link>
-          </li>
-          <li className="p-2 hover:bg-white hover:text-red-600 rounded">
-            <Link to="/adminsubscribecourselist">Subscribe List</Link>
-          </li>
-          <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-            <Link to="/addcourse">Add Course</Link>
-          </li>
-          <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-            <Link to="/addmodule">Add Module</Link>
-          </li>
-          <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-            <Link to="/addmeeting">Add Live Session</Link>
-          </li>
-          <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-            <Link to="/admin/addemi">Add Emi Plans</Link>
-          </li>
-          <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-            <Link to="/admin/emailuserlist">Track Emi Plans</Link>
-          </li>
-          <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-            <a href="/payment">Payment List</a>
-          </li>
-        </ul>
-      </aside>
+    {/* Sidebar - Always visible on desktop and mobile */}
+    <div className="w-full md:w-1/4 bg-white shadow-md">
+      <Admin />
+    </div>
 
-      {/* Main Content */}
-      <div className="flex-1 p-6 overflow-auto">
+    <div className="w-full md:w-3/4 px-4 sm:px-6 py-8 mx-auto">
         <div className="max-w-6xl mx-auto bg-white shadow rounded p-6 border border-red-200">
           <button
             onClick={() => setIsSidebarOpen(true)}

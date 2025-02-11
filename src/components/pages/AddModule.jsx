@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import Admin from "./Admin";
 import { db, storage } from "../../firebaseConfig";
 import {
   collection,
@@ -30,6 +31,11 @@ const AddModule = () => {
   const [editVideo, setEditVideo] = useState(null);
   const [editMaterial, setEditMaterial] = useState(null);
   const [currentSection, setCurrentSection] = useState(null);
+
+  const [newVideoDescription, setNewVideoDescription] = useState("");
+const [uploading, setUploading] = useState(false); // ✅ Track upload status
+const [uploadTask, setUploadTask] = useState(null); // ✅ Track ongoing upload
+
 
 
 
@@ -81,43 +87,56 @@ const AddModule = () => {
     }
   }, [selectedCourse]);
 
-  const handleUpload = async (title, file, type) => {
+  const handleUpload = async (title, description, file, type) => {
     try {
+      if (!file) {
+        alert("Please select a file to upload.");
+        return;
+      }
+  
+      setUploading(true);
       const storageRef = ref(storage, `${type}/${selectedCourse}/${Date.now()}_${file.name}`);
-      const uploadTask = uploadBytesResumable(storageRef, file);
-
-      uploadTask.on(
+      const uploadTaskInstance = uploadBytesResumable(storageRef, file);
+      setUploadTask(uploadTaskInstance); // ✅ Store upload task to allow cancellation
+  
+      uploadTaskInstance.on(
         "state_changed",
         (snapshot) => {
           const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          if (type === "videos") {
-            setVideoUploadProgress(progress);
-          } else {
-            setMaterialUploadProgress(progress);
-          }
+          setVideoUploadProgress(progress);
         },
         (error) => {
           console.error("File upload failed:", error);
+          setUploading(false);
         },
         async () => {
-          const fileUrl = await getDownloadURL(uploadTask.snapshot.ref);
+          const fileUrl = await getDownloadURL(uploadTaskInstance.snapshot.ref);
           const collectionRef = collection(db, `${type}_${selectedCourse}`);
-          await addDoc(collectionRef, { title, url: fileUrl });
+  
+          await addDoc(collectionRef, { title, description, url: fileUrl }); // ✅ Save description
           alert("Uploaded successfully");
-
-          if (type === "videos") {
-            setVideoModules([...videoModules, { title, url: fileUrl }]);
-            setVideoUploadProgress(0);
-          } else {
-            setStudyMaterials([...studyMaterials, { title, url: fileUrl }]);
-            setMaterialUploadProgress(0);
-          }
+  
+          setVideoModules([...videoModules, { title, description, url: fileUrl }]);
+          setVideoUploadProgress(0);
+          setUploading(false);
         }
       );
     } catch (error) {
       console.error("Error uploading:", error);
+      setUploading(false);
     }
   };
+
+  const cancelUpload = () => {
+    if (uploadTask) {
+      uploadTask.cancel(); // ✅ Cancel Firebase upload
+      setUploadTask(null);
+      setUploading(false);
+      setVideoUploadProgress(0);
+      alert("Upload canceled.");
+    }
+  };
+  
 
   const handleDelete = async (id, type) => {
     try {
@@ -133,151 +152,53 @@ const AddModule = () => {
     }
   };
 
-  const handleEdit = async (id, updatedTitle, file, type) => {
+  const handleEdit = async (id, updatedTitle, updatedDescription, file, type) => {
     try {
       let fileUrl = null;
-
+  
       if (file) {
         const storageRef = ref(storage, `${type}/${selectedCourse}/${Date.now()}_${file.name}`);
         const uploadTask = uploadBytesResumable(storageRef, file);
-
+  
         uploadTask.on(
           "state_changed",
-          () => { },
+          () => {},
           (error) => {
             console.error("File upload failed:", error);
           },
           async () => {
             fileUrl = await getDownloadURL(uploadTask.snapshot.ref);
-            const updatedData = { title: updatedTitle };
-
+            const updatedData = { title: updatedTitle, description: updatedDescription }; // ✅ Add description
+  
             if (fileUrl) updatedData.url = fileUrl;
-
+  
             await updateDoc(doc(db, `${type}_${selectedCourse}`, id), updatedData);
             alert("Updated successfully");
             setEditVideo(null);
-            setEditMaterial(null);
           }
         );
       } else {
-        await updateDoc(doc(db, `${type}_${selectedCourse}`, id), { title: updatedTitle });
+        await updateDoc(doc(db, `${type}_${selectedCourse}`, id), {
+          title: updatedTitle,
+          description: updatedDescription, // ✅ Include description update
+        });
         alert("Updated successfully");
         setEditVideo(null);
-        setEditMaterial(null);
       }
     } catch (error) {
       console.error("Error updating:", error);
     }
   };
+  
 
   return (
-    <div className="flex flex-col  md:flex-row  min-h-screen bg-gray-100">
+   <div className="flex flex-col md:flex-row min-h-screen bg-white">
+    {/* Sidebar - Always visible on desktop and mobile */}
+    <div className="w-full md:w-1/4 bg-white shadow-md">
+      <Admin />
+    </div>
 
-      {/* Sidebar */}
-      <aside
-        className={`w-full h-screen md:w-1/6 bg-red-600 text-white p-4 shadow-lg transition-transform transform ${isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-          } md:relative fixed top-0 left-0 z-10`}
-      >
-        <div className="flex justify-between items-center mb-4 md:mb-0">
-          <h1 className="text-2xl font-bold">Admin Portal</h1>
-          <button
-            onClick={() => setIsSidebarOpen(false)}
-            className="md:hidden text-2xl font-bold"
-          >
-            ✖
-          </button>
-        </div>
-        <ul className="mt-4">
-
-
-
-
-
-
-          <div>
-            <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-              <Link to="/adminarticle">Articles</Link>
-            </li>
-          </div>
-
-
-
-          <div>
-            <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-              <Link to="/admincalendar">Calendar</Link>
-            </li>
-          </div>
-
-          <div>
-            <li className="p-2 hover:bg-white hover:text-red-600 rounded">
-              <Link to="/adminsubscribecourselist">Subscribe List</Link>
-            </li>
-          </div>
-
-
-          <div>
-            <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-              <Link to="/addcourse">Add Course</Link>
-            </li>
-          </div>
-          <div>
-            <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-              <Link to="/addmodule">Add Module</Link>
-            </li>
-          </div>
-          {/* <div>
-      <li className="p-2 hover:bg-blue-100"><Link to="/adminlivesession">Add Live Session </Link></li>
-    </div> */}
-          <div>
-            <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-              <Link to="/addmeeting">Add Live Session</Link>
-            </li>
-          </div>
-          <div>
-            <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-              <Link to="/admin/addemi">Add Emi Plans</Link>
-            </li>
-          </div>
-          <div>
-            <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-              <Link to="/admin/emailuserlist">Track Emi Plans</Link>
-            </li>
-          </div>
-
-          <div>
-            <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-              <a href="/payment">Payment List</a>
-            </li>
-          </div>
-        </ul>
-      </aside>
-
-
-
-      <div className="flex-1 p-4 mt-16 md:mt-0">
-
-
-        {/* Menu Icon */}
-        <button
-          onClick={() => setIsSidebarOpen(true)}
-          className="md:hidden bg-red-500 text-white p-2 mb-4 rounded flex items-center"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M4 6h16M4 12h16M4 18h16"
-            />
-          </svg>
-        </button>
-
+    <div className="w-full md:w-3/4 px-4 sm:px-6 py-8 mx-auto">
         <div className="my-4">
           <label className="block font-medium">Select Course:</label>
           <select
@@ -295,37 +216,64 @@ const AddModule = () => {
         </div>
 
         <div className="mt-6">
-          <h2 className="text-xl font-semibold">Upload New Video Session</h2>
-          <input
-            type="text"
-            placeholder="Video Title"
-            value={newVideoTitle}
-            onChange={(e) => setNewVideoTitle(e.target.value)}
-            className="w-full p-2 border rounded mb-2"
-          />
-          <input
-            type="file"
-            onChange={(e) => setNewVideoFile(e.target.files[0])}
-            className="mb-2"
-          />
-          {videoUploadProgress > 0 && (
-            <div className="mb-2">
-              <div className="w-full bg-gray-300 rounded-full h-4">
-                <div
-                  className="bg-blue-600 h-4 rounded-full"
-                  style={{ width: `${videoUploadProgress}%` }}
-                ></div>
-              </div>
-              <p className="text-sm text-gray-600 mt-1">{Math.round(videoUploadProgress)}% uploaded</p>
-            </div>
-          )}
-          <button
-            onClick={() => handleUpload(newVideoTitle, newVideoFile, "videos")}
-            className="bg-blue-500 text-white px-4 py-2 rounded w-full"
-          >
-            Upload Video
-          </button>
-        </div>
+  <h2 className="text-xl font-semibold">Upload New Video Session</h2>
+  <input
+    type="text"
+    placeholder="Video Title"
+    value={newVideoTitle}
+    onChange={(e) => setNewVideoTitle(e.target.value)}
+    className="w-full p-2 border rounded mb-2"
+  />
+  <textarea
+    placeholder="Video Description"
+    value={newVideoDescription}
+    onChange={(e) => setNewVideoDescription(e.target.value)}
+    className="w-full p-2 border rounded mb-2"
+  />
+  <input
+    type="file"
+    onChange={(e) => setNewVideoFile(e.target.files[0])}
+    className="mb-2"
+  />
+
+  {/* ✅ Upload Progress Bar */}
+  {videoUploadProgress > 0 && (
+    <div className="mb-2">
+      <div className="w-full bg-gray-300 rounded-full h-4">
+        <div
+          className="bg-blue-600 h-4 rounded-full"
+          style={{ width: `${videoUploadProgress}%` }}
+        ></div>
+      </div>
+      <p className="text-sm text-gray-600 mt-1">
+        {uploading ? `Uploading... ${Math.round(videoUploadProgress)}%` : "Upload complete!"}
+      </p>
+    </div>
+  )}
+
+  {/* ✅ Upload Button */}
+  <div className="flex space-x-2">
+    <button
+      onClick={() => handleUpload(newVideoTitle, newVideoDescription, newVideoFile, "videos")}
+      disabled={uploading} // Disable button when uploading
+      className={`bg-blue-500 text-white px-4 py-2 rounded w-full ${
+        uploading ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-600"
+      }`}
+    >
+      {uploading ? "Uploading..." : "Upload Video"}
+    </button>
+
+    {/* ✅ Cancel Upload Button */}
+    {uploading && (
+      <button
+        onClick={cancelUpload}
+        className="bg-red-500 text-white px-4 py-2 rounded"
+      >
+        Cancel Upload
+      </button>
+    )}
+  </div>
+</div>
 
         <div className="mt-6">
           <h2 className="text-xl font-semibold">Upload New Study Material</h2>
@@ -385,26 +333,49 @@ const AddModule = () => {
                 </div>
               </div>
               {editVideo && editVideo.id === module.id && (
-                <div className="mt-4">
-                  <input
-                    type="text"
-                    defaultValue={module.title}
-                    onChange={(e) => (module.title = e.target.value)}
-                    className="w-full p-2 border rounded mb-2"
-                  />
-                  <input
-                    type="file"
-                    onChange={(e) => (module.newFile = e.target.files[0])}
-                    className="mb-2"
-                  />
-                  <button
-                    onClick={() => handleEdit(module.id, module.title, module.newFile, "videos")}
-                    className="bg-green-500 text-white px-4 py-2 rounded w-full"
-                  >
-                    Save
-                  </button>
-                </div>
-              )}
+  <div className="mt-4 p-4 bg-gray-100 rounded">
+    <label className="block font-medium">Edit Video Title</label>
+    <input
+      type="text"
+      defaultValue={module.title}
+      onChange={(e) => (module.title = e.target.value)}
+      className="w-full p-2 border rounded mb-2"
+    />
+
+    <label className="block font-medium">Edit Video Description</label>
+    <textarea
+      defaultValue={module.description} // ✅ Add description field
+      onChange={(e) => (module.description = e.target.value)}
+      className="w-full p-2 border rounded mb-2"
+    />
+
+    <label className="block font-medium">Upload New Video (Optional)</label>
+    <input
+      type="file"
+      onChange={(e) => (module.newFile = e.target.files[0])}
+      className="mb-2"
+    />
+
+    <div className="flex space-x-2">
+      {/* ✅ Save Button */}
+      <button
+        onClick={() => handleEdit(module.id, module.title, module.description, module.newFile, "videos")}
+        className="bg-green-500 text-white px-4 py-2 rounded w-full"
+      >
+        Save
+      </button>
+
+      {/* ✅ Cancel Button */}
+      <button
+        onClick={() => setEditVideo(null)} // ✅ Reset edit mode
+        className="bg-red-500 text-white px-4 py-2 rounded w-full"
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+)}
+
             </div>
           ))}
         </div>

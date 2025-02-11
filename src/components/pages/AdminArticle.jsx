@@ -1,8 +1,6 @@
-
-
-// AdminArticles.js (Updated with Missing Fields and Fully Functional)
 import React, { useState, useEffect } from "react";
 import { db, storage } from "../../firebaseConfig";
+import Admin from "./Admin";  
 import {
   collection,
   getDocs,
@@ -21,6 +19,9 @@ const AdminArticles = () => {
   const [formVisible, setFormVisible] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [editMode, setEditMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // NEW: Buffering while fetching articles
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [formState, setFormState] = useState({
     title: "",
     author: "",
@@ -34,25 +35,14 @@ const AdminArticles = () => {
     content: "",
   });
   const [selectedImage, setSelectedImage] = useState(null);
-
+  const [alertMessage, setAlertMessage] = useState(""); // NEW: Alert message
+  const [alertType, setAlertType] = useState(""); // NEW: Success or error
   useEffect(() => {
     fetchArticles();
   }, []);
 
-  //   const fetchArticles = async () => {
-  //     try {
-  //       const data = await getDocs(collection(db, "Articles"));
-  //       const articlesData = data.docs.map((doc) => ({
-  //         ...doc.data(),
-  //         id: doc.id,
-  //       }));
-  //       setArticles(articlesData);
-  //     } catch (error) {
-  //       console.error("Error fetching articles:", error);
-  //     }
-  //   };
-
   const fetchArticles = async () => {
+    setIsLoading(true);
     try {
       const data = await getDocs(collection(db, "Articles"));
       const articlesData = data.docs.map((doc) => ({
@@ -61,38 +51,13 @@ const AdminArticles = () => {
       }));
       setArticles(articlesData);
     } catch (error) {
-      console.error("Error fetching articles:", error);
+      showAlert("Error fetching articles. Please try again.", "error");
     }
+    setIsLoading(false);
   };
 
-  // const handleSaveArticle = async () => {
-  //   try {
-  //     let imageUrl = formState.imageUrl;
-  //     if (selectedImage) {
-  //       const imageRef = ref(storage, `articles/${selectedImage.name}`);
-  //       const uploadTask = await uploadBytes(imageRef, selectedImage);
-  //       imageUrl = await getDownloadURL(uploadTask.ref);
-  //     }
-
-  //     const articleData = {
-  //       ...formState,
-  //       imageUrl,
-  //     };
-
-  //     if (editMode) {
-  //       await updateDoc(doc(db, "Articles", formState.id), articleData);
-  //     } else {
-  //       await addDoc(collection(db, "Articles"), articleData);
-  //     }
-  //     fetchArticles();
-  //     resetForm();
-  //   } catch (error) {
-  //     console.error("Error saving article:", error);
-  //   }
-  // };
-
-
   const handleSaveArticle = async () => {
+    setIsSaving(true);
     try {
       let imageUrl = formState.imageUrl;
       if (selectedImage) {
@@ -100,38 +65,43 @@ const AdminArticles = () => {
         const uploadTask = await uploadBytes(imageRef, selectedImage);
         imageUrl = await getDownloadURL(uploadTask.ref);
       }
-  
+
       const articleData = {
         ...formState,
         imageUrl,
-        createdAt: serverTimestamp(), // Add timestamp here
+        createdAt: serverTimestamp(),
       };
-  
+
       if (editMode) {
-        // Ensure createdAt remains unchanged on update
         const { createdAt, ...updatedArticleData } = articleData;
         await updateDoc(doc(db, "Articles", formState.id), updatedArticleData);
+        showAlert("Article updated successfully!", "success");
       } else {
         await addDoc(collection(db, "Articles"), articleData);
+        showAlert("Article added successfully!", "success");
       }
-  
+
       fetchArticles();
       resetForm();
     } catch (error) {
-      console.error("Error saving article:", error);
+      showAlert("Error saving article. Please try again.", "error");
     }
+    setIsSaving(false);
   };
-  
-
-
 
   const handleDeleteArticle = async (id) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this article?");
+    if (!confirmDelete) return;
+
+    setIsDeleting(true);
     try {
       await deleteDoc(doc(db, "Articles", id));
+      showAlert("Article deleted successfully!", "success");
       fetchArticles();
     } catch (error) {
-      console.error("Error deleting article:", error);
+      showAlert("Error deleting article. Please try again.", "error");
     }
+    setIsDeleting(false);
   };
 
   const resetForm = () => {
@@ -153,105 +123,35 @@ const AdminArticles = () => {
     setUploadProgress(0);
   };
 
+  const showAlert = (message, type) => {
+    setAlertMessage(message);
+    setAlertType(type);
+    setTimeout(() => {
+      setAlertMessage("");
+      setAlertType("");
+    }, 3000);
+  };
+
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-gray-100">
-      {/* Sidebar */}
-      <aside
-        className={`w-full h-screen md:w-1/6 bg-red-600 text-white p-4 shadow-lg transition-transform transform ${isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-          } md:relative fixed top-0 left-0 z-10`}
-      >
-        <div className="flex justify-between items-center mb-4 md:mb-0">
-          <h1 className="text-2xl font-bold">Admin Portal</h1>
-          <button
-            onClick={() => setIsSidebarOpen(false)}
-            className="md:hidden text-2xl font-bold"
-          >
-            ✖
-          </button>
-        </div>
-        <ul className="mt-4">
-          <div>
-            <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-              <Link to="/adminarticle">Articles</Link>
-            </li>
-          </div>
+    <div className="flex flex-col md:flex-row min-h-screen bg-white">
+      {/* Sidebar - Always visible on desktop and mobile */}
+      <div className="w-full md:w-1/4 bg-white shadow-md">
+        <Admin />
+      </div>
 
-
-
-          <div>
-            <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-              <Link to="/admincalendar">Calendar</Link>
-            </li>
+      <div className="w-full md:w-3/4 px-4 sm:px-6 py-8 mx-auto">
+        {/* 🔔 Alert Messages for Success/Error */}
+        {alertMessage && (
+          <div className={`p-2 text-center text-white ${alertType === "success" ? "bg-green-500" : "bg-red-500"} rounded-md mb-4`}>
+            {alertMessage}
           </div>
-
-          <div>
-            <li className="p-2 hover:bg-white hover:text-red-600 rounded">
-              <Link to="/adminsubscribecourselist">Subscribe List</Link>
-            </li>
-          </div>
-
-          <div>
-            <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-              <Link to="/addcourse">Add Course</Link>
-            </li>
-          </div>
-          <div>
-            <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-              <Link to="/addmodule">Add Module</Link>
-            </li>
-          </div>
-          {/* <div>
-                      <li className="p-2 hover:bg-blue-100"><Link to="/adminlivesession">Add Live Session </Link></li>
-                    </div> */}
-          <div>
-            <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-              <Link to="/addmeeting">Add Live Session</Link>
-            </li>
-          </div>
-          <div>
-            <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-              <Link to="/admin/addemi">Add Emi Plans</Link>
-            </li>
-          </div>
-          <div>
-            <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-              <Link to="/admin/emailuserlist">Track Emi Plans</Link>
-            </li>
-          </div>
-
-          <div>
-            <li className="p-2 transition-colors duration-200 hover:bg-white hover:text-red-600">
-              <a href="/payment">Payment List</a>
-            </li>
-          </div>
-        </ul>
-      </aside>
-
-
-      {/* Main Content */}
-      <div className="flex-1 p-4 md:p-8">
-        <button
-          onClick={() => setIsSidebarOpen(true)}
-          className="md:hidden bg-red-500 text-white p-2 rounded flex items-center"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M4 6h16M4 12h16M4 18h16"
-            />
-          </svg>
-        </button>
+        )}
 
         <section>
           <h2 className="text-3xl text-red-600 font-semibold mb-4">Manage Articles</h2>
+          {/* ⏳ Loader for Fetching Articles */}
+          {isLoading && <p className="text-center text-gray-500">Loading articles...</p>}
+
 
           {formVisible && (
             <form
@@ -340,12 +240,9 @@ const AdminArticles = () => {
                   </p>
                 )}
               </div>
-              <button
-                onClick={handleSaveArticle}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 w-full"
-              >
-                {editMode ? "Update Article" : "Add Article"}
-              </button>
+              <button onClick={handleSaveArticle} disabled={isSaving} className={`px-4 py-2 w-full ${isSaving ? "bg-gray-400 cursor-not-allowed" : "bg-red-500 hover:bg-red-600 text-white"}`}>
+              {isSaving ? "Saving..." : editMode ? "Update Article" : "Add Article"}
+            </button>
             </form>
           )}
 
@@ -379,12 +276,9 @@ const AdminArticles = () => {
                   >
                     Edit
                   </button>
-                  <button
-                    onClick={() => handleDeleteArticle(article.id)}
-                    className="w-full md:w-auto px-6 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all"
-                  >
-                    Delete
-                  </button>
+                  <button onClick={() => handleDeleteArticle(article.id)} disabled={isDeleting} className={`ml-4 px-4 py-2 ${isDeleting ? "bg-gray-400 cursor-not-allowed" : "bg-red-500 hover:bg-red-600 text-white"} rounded-full`}>
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
                 </div>
               </li>
             ))}

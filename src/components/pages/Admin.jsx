@@ -1,57 +1,100 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Menu, X } from "lucide-react"; // For icons
+import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
+import { path } from "framer-motion/client";
 
-const AdminSidebar = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+const SideBar = () => {
+  const [isOpen, setIsOpen] = useState(false);
 
+  // Close sidebar on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("keydown", handleKeyDown);
+      document.body.classList.add("overflow-hidden"); // Prevent scrolling
+    } else {
+      document.body.classList.remove("overflow-hidden"); // Restore scrolling
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.classList.remove("overflow-hidden");
+    };
+  }, [isOpen]);
+
+  const menuItems =[
+    { name: "Add Articles", path: "/admin/adminarticle" },
+    { name: "Calendar", path: "/admin/admincalendar" },
+    { name: "Add Course", path: "/admin/addcourse" },
+    { name: "Add Module", path: "/admin/addmodule" },
+    { name: "Add Live Session", path: "/admin/addmeeting" },
+    { name: "Subscribe List", path: "/admin/adminsubscribecourselist" },
+    { name: "Add EMI Plans", path: "/admin/addemi" },
+    { name: "Track EMI Plans", path: "/admin/emailuserlist" },
+    { name: "Payment List", path: "/admin/payment" },       
+    { name: "Course Inquiry", path: "/admin/admininquiry" },            
+    { name: "ContactUs Inquiry", path: "/admin/admincontact" },
+    { name: "Question & Ans", path: "/admin/question-ans" },
+    {name:"Course Order",path:"/admin/admincourseorder"}
+
+   
+
+  ]
   return (
     <>
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="md:hidden fixed top-4 left-4 z-20 bg-red-600 text-white p-2 rounded-md shadow-lg"
-      >
-        {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
-      </button>
+      {/* Sidebar Toggle Button (Only for Mobile) */}
+      {!isOpen && (
+        <button
+          className="lg:hidden fixed top-24 left-4 bg-red-800 text-white p-2 rounded-md z-50"
+          onClick={() => setIsOpen(true)}
+        >
+          <IoIosArrowForward size={24} className="text-white" />
+        </button>
+      )}
 
       {/* Sidebar */}
       <aside
-        className={`w-full md:w-1/5 bg-red-600 text-white p-4 shadow-lg transition-transform transform ${
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-        } fixed md:relative top-0 left-0 h-screen z-10`}
+        className={`bg-red-800 text-white h-full w-64 p-6 fixed lg:relative transition-transform duration-300 ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        } lg:translate-x-0`}
       >
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Admin Portal</h1>
-          {/* Close Button on Mobile */}
-          <button
-            onClick={() => setIsSidebarOpen(false)}
-            className="text-2xl font-bold md:hidden"
-          >
-            ✖
-          </button>
-        </div>
+        {/* Close Button (Mobile Only) */}
+        <button
+          className="lg:hidden absolute top-4 right-4 text-white"
+          onClick={() => setIsOpen(false)}
+        >
+          <IoIosArrowBack size={24} />
+        </button>
 
-        <ul className="space-y-4">
-          {[
-            { name: "Articles", path: "/adminarticle" },
-            { name: "Subscribe List", path: "/adminsubscribecourselist" },
-            { name: "Calendar", path: "/admincalendar" },
-            { name: "Add Course", path: "/addcourse" },
-            { name: "Add Module", path: "/addmodule" },
-            { name: "Add Live Session", path: "/addmeeting" },
-            { name: "Add EMI Plans", path: "/admin/addemi" },
-            { name: "Track EMI Plans", path: "/admin/emailuserlist" },
-            { name: "Payment List", path: "/payment" },
-          ].map((item, index) => (
-            <li key={index} className="p-2 hover:bg-white hover:text-red-600 rounded">
-              <Link to={item.path}>{item.name}</Link>
-            </li>
-          ))}
-        </ul>
+        <h2 className="text-2xl font-bold mb-6">Admin Portal</h2>
+        <nav>
+          <ul className="space-y-4">
+            {menuItems.map((item, index) => (
+              <li key={index} className="p-2 hover:bg-white hover:text-red-600 rounded">
+                <Link to={item.path}>{item.name}</Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
       </aside>
+
+      {/* Overlay for Mobile (Closes Sidebar when clicked outside) */}
+      {isOpen && (
+        <ul className="space-y-4">
+        {menuItems.map((item, index) => (
+          <li key={index} className="p-2 hover:bg-white hover:text-red-600 rounded" onClick={() => setIsOpen(false)}>
+            <Link to={item.path}>{item.name}</Link>
+          </li>
+        ))}
+      </ul>
+      )}
     </>
   );
 };
 
-export default AdminSidebar;
+export default SideBar;

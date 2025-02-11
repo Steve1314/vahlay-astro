@@ -23,8 +23,15 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
 
 
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
 
   const testimonials = [
@@ -51,7 +58,7 @@ const Home = () => {
     },
     {
       rating: 4.5,
-      quote: "I was impressed by their professionalism and innovative approach. Vahlay Consulting provided insights that completely transformed the way we operate. Highly reliable and results-driven!",
+      quote: "I was impressed by their professionalism and innovative approach. Vahlay Consulting provided insights that completely transformed the way we operate. Highly reliable and results-driven! I would recommend their services to anyone looking to take their business to the next level.Thank you for the ongoing support!.feels good to be a part of this community",
       name: "Jason Miller",
       title: "CEO",
 
@@ -65,12 +72,29 @@ const Home = () => {
     },
     {
       rating: 4,
-      quote: "I’ve been seeking guidance on my career path, and the consultation with... Vahlay Astro was exactly what I needed. The astrologer provided practical and spiritual insights that gave me the clarity I was looking for. I’m excited about the direction I’m headed in. Thank you for the ongoing support!",
+      quote: "I’ve been seeking guidance on my career path, and the consultation with... Vahlay Astro was exactly what I needed. The astrologer provided practical and spiritual insights that gave me the clarity I was looking for. I’m excited about the direction I’m headed in. Thank you for the ongoing support!,feels good to be a part of this community",
       name: "Neha R.",
       title: "Amazing Support and Clarity",
 
     },
   ];
+
+
+  const partners = [
+    {
+      name: "LAKSHYA",
+      logo: "/assets/Lakshya_logo-removebg-preview.png",
+      link: "#",
+    },
+    {
+      name: "Vahlay Consulting",
+      logo: "/assets/VahalyConsulting logo.webp",
+      link: "https://vahlayconsulting.com/",
+    },
+  ];
+
+
+
 
 
   const navigate = useNavigate()
@@ -133,23 +157,24 @@ const Home = () => {
                 details[course.title]?.status === "active" &&
                 new Date(details[course.title]?.expiryDate) > new Date()
             );
-
-        if (isEnrolled) {
-          navigate("/dashboard");
-        } else {
-          navigate(`/coursedetail/${course.id}`, {
-            state: { courseId: course.id, courseType: course.type },
-          });
+            if (isEnrolled) {
+              navigate("/dashboard");
+            } else {
+              navigate(`/coursedetail/${course.id}/${course.type}`, {
+                state: { courseId: course.id, courseType: course.type },
+              });
+            }
+          } else {
+            navigate(`/coursedetail/${course.id}/${course.type}`, {
+              state: { courseId: course.id, courseType: course.type },
+            });
+          }
+        } catch (error) {
+          console.error("Error checking subscription status:", error);
+          alert("An error occurred. Please try again later.");
         }
-      } else {
-        navigate(`/coursedetail/${course.id}`, {
-          state: { courseId: course.id, courseType: course.type },
-        });
-      }
-    } catch (error) {
-      alert("An error occurred. Please try again later.");
-    }
-  };
+      };
+    
 
 
   const fetchData = async () => {
@@ -202,13 +227,13 @@ const Home = () => {
 
 
 
-      <section className="bg-white-50 py-8 md:py-16">
+      <section className="bg-white-50 mb-2 md:py-16">
         <div className="max-w-7xl mx-auto flex flex-wrap justify-center items-center gap-6 px-4">
           {/* Courses */}
           <Link to={"/courses"}>
             <div className="flex flex-col items-center justify-center cursor-pointer group">
-              <div className="p-6 md:p-8 rounded-full bg-white shadow-md group-hover:shadow-lg transition-transform transform group-hover:-translate-y-2">
-                <FaGraduationCap className="text-red-600 h-16 w-16 md:h-20 md:w-20" />
+              <div className="p-6 md:p-8 rounded-full bg-white shadow-md group-hover:shadow-lg transition-transform transform  hover:animate-bounce">
+                <FaGraduationCap className="text-red-600 h-10 w-10 md:h-20 md:w-20" />
               </div>
               <h3 className="mt-4 md:mt-6 text-lg md:text-2xl font-bold text-red-600 group-hover:text-red-700 transition-colors">
                 Courses
@@ -219,8 +244,8 @@ const Home = () => {
           {/* Articles */}
           <Link to={"/articles"}>
             <div className="flex flex-col items-center justify-center cursor-pointer group">
-              <div className="p-6 md:p-8 rounded-full bg-white shadow-md group-hover:shadow-lg transition-transform transform group-hover:-translate-y-2">
-                <FaBookOpen className="text-red-600 h-16 w-16 md:h-20 md:w-20" />
+              <div className="p-6 md:p-8 rounded-full bg-white shadow-md group-hover:shadow-lg transition-transform transform  hover:animate-bounce">
+                <FaBookOpen className="text-red-600 h-10 w-10 md:h-20 md:w-20" />
               </div>
               <h3 className="mt-4 md:mt-6 text-lg md:text-2xl font-bold text-red-600 group-hover:text-red-700 transition-colors">
                 Articles
@@ -231,8 +256,8 @@ const Home = () => {
           {/* Consultation */}
           <Link to={"/consulting"}>
             <div className="flex flex-col items-center justify-center cursor-pointer group">
-              <div className="p-6 md:p-8 rounded-full bg-white shadow-md group-hover:shadow-lg transition-transform transform group-hover:-translate-y-2">
-                <FaUserTie className="text-red-600 h-16 w-16 md:h-20 md:w-20" />
+              <div className="p-6 md:p-8 rounded-full bg-white shadow-md group-hover:shadow-lg transition-transform transform hover:animate-bounce">
+                <FaUserTie className="text-red-600 h-10 w-10 md:h-20 md:w-20" />
               </div>
               <h3 className="mt-4 md:mt-6 text-lg md:text-2xl font-bold text-red-600 group-hover:text-red-700 transition-colors">
                 Consultation
@@ -244,7 +269,7 @@ const Home = () => {
 
 
       {/* Hero Section */}
-      <div className="bg-gray-100 min-h-screen flex items-center justify-center"
+      <div className="bg-gray-100  mt-0 mb-2 flex items-center justify-center"
         style={{
           backgroundImage: "url('/assets/Screenshot 2024-11-28 211019.png')"
         }}>
@@ -255,13 +280,13 @@ const Home = () => {
 
         <div className="container mx-auto flex flex-col-reverse lg:flex-row items-center justify-between px-6 lg:px-20">
           {/* Left Content */}
-          <div className=" bg-white lg:w-1/2 text-center lg:text-left space-y-6 ">
-            <p className="text-3xl lg:text-4xl font-bold text-red-600 leading-tight">
-              Leads your life from Darkness to Light With <strong className='text-5xl'> Vahlay Astro</strong>    ...
+          <div className=" bg-white mt-3 lg:w-1/2 text-center lg:text-left space-y-6 ">
+            <p className="text-xl lg:text-4xl font-bold text-red-600 leading-tight">
+              Leads your life from Darkness to Light With <strong className='  text-2xl lg:text-5xl'> Vahlay Astro</strong>    ...
 
 
             </p>
-            <p className="text-gray-700 text-lg">
+            <p className="text-gray-700  text-sm lg:text-lg">
               Welcome to...<strong> Vahlay Astro</strong>, your trusted source for astrology education and expert guidance. Whether you're just starting your journey into the world of astrology or looking to deepen your knowledge, our courses and support services are designed to help you understand the cosmic forces that influence your life. Join our community of passionate learners and unlock the secrets of the stars!          </p>
             <Link to="/services">
               <button className="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:bg-red-700 transition mt-4">
@@ -271,7 +296,7 @@ const Home = () => {
           </div>
 
           {/* Right Image */}
-          <div className="lg:w-1/2 flex justify-center lg:justify-end opacity-80">
+          <div className="lg:w-1/2 flex justify-center  lg:justify-end opacity-80">
             <img
               src="/assets/new wheel.png" // Replace with the correct image path
               alt="Astrology Chart"
@@ -283,21 +308,14 @@ const Home = () => {
       </div>
 
 
-      <div className="bg-white py-12 px-6">
-
-
-      </div>
-
-
-
 
       {/* Course Section */}
-      <div className="py-12 bg-gray-50 text-center">
-        <div className="bg-red-600 py-4 px-4 mb-12 rounded-xl">
-          <h2 className="text-center text-2xl font-bold text-white sm:text-3xl">
+      <div className=" py-2 mx-4 lg:py-12  bg-gray-50 text-center">
+        <div className="bg-red-600  py-4 px-4 mb-2 lg:mb-12 rounded-xl">
+          <h2 className="text-center  text-xl lg:text-2xl font-bold text-white sm:text-3xl">
             Courses for Astrologer
           </h2>
-          <p className="text-md font-bold text-orange-200 sm:text-lg">
+          <p className="text-sm font-bold text-orange-200 sm:text-lg">
             It's Not Just A Course, It’s A Life-Changing Experience!
           </p>
         </div>
@@ -307,83 +325,78 @@ const Home = () => {
           loop={true} // Enable infinite looping
           breakpoints={{
             640: { slidesPerView: 2, loop: true }, // Show 2 slides for larger mobile screens
-            1024: { slidesPerView: 3, loop: false }, // Show 3 slides for tablets and above
+            1024: { slidesPerView: 3, loop: true }, // Show 3 slides for tablets and above
           }}
           spaceBetween={20} // Reduced space for better alignment on small screens
           navigation={true} // Enable navigation arrows
           pagination={{ clickable: true }} // Enable pagination dots
           modules={[Navigation, Pagination]}
-          className="w-full mb-20"
+          className="w-full mb-8  lg:mb-20"
         >
           {courses.map((course, index) => (
             <SwiperSlide key={index}>
               <div
-
-                className="w-full p-4 h-[600px] bg-red-100 shadow-md rounded-xl border border-gray-300 hover:shadow-lg hover:-translate-y-1 transform transition-all duration-300"
+                className="w-full p-4 h-auto  bg-red-100 shadow-md rounded-xl border border-gray-300 hover:shadow-lg hover:-translate-y-1 transform transition-all duration-300"
                 onClick={() => handleCourseClick(course)} // Add the course click handler
               >
-                <div className="bg-pink-100 p-4 rounded-lg mb-4">
+                <div className="bg-pink-100 p-4 rounded-lg mb-2">
                   <img
                     src={course.imageUrl || '/placeholder-image.jpg'} // Fallback image
                     alt={course.title || 'Course'}
-                    className="w-auto h-[auto]"
+                    className="w-full h-64 lg:h-auto object-cover rounded-md shadow-md mx-auto"
                   />
                 </div>
-                <div>
-                  <h3 className="text-center text-lg font-medium text-gray-700">
-                    {course.title || 'Untitled Course'}
+
+                <div className="text-center">
+                  {/* Title with Single Line Truncation */}
+                  <h3
+                    className="text-base md:text-xl font-medium text-gray-700 whitespace-nowrap overflow-hidden text-ellipsis block"
+                    title={course.title} // Full title on hover
+                  >
+                    {course.title}
                   </h3>
-                  <h4 className="text-center text-lg font-medium text-gray-700">
-                    {course.Subtitle || 'Untitled Course'}
-                  </h4>
+
                   {/* Conditional Link */}
-                  {course.type === 'free' ? (
-                    <Link
-                      to={`/enrollfree/${course.id}`}
-                      className="text-red-600 mt-[10px] font-bold hover:underline"
-                    >
+                  {course.type === "free" ? (
+                    <Link to={`/enrollfree/${course.id}/${course.type}`} className="block mb-3 text-center text-white bg-red-600 font-medium py-2 rounded-lg hover:bg-red-700 transition">
                       Enroll Now →
                     </Link>
-                  ) : course.type === 'paid' ? (
-                    <Link
-                      to={`/enroll/${course.id}`}
-                      className="text-red-600 font-bold hover:underline"
-                    >
+                  ) : course.type === "paid" ? (
+                    <Link to={`/enroll/${course.id}/${course.type}`} className="block mb-3 text-center text-white bg-red-600 font-medium py-2 rounded-lg hover:bg-red-700 transition">
                       Enroll Now →
                     </Link>
                   ) : (
-                    <p className="text-red-500 font-bold">Unknown Course Type</p>
+                    <p className="text-center mb-3 text-red-500 font-semibold">Unknown Course Type</p>
                   )}
                 </div>
               </div>
             </SwiperSlide>
-
           ))}
-
         </Swiper>
+
       </div>
 
 
 
 
       {/* abouts us section */}
-      <div className="flex flex-col lg:flex-row items-center gap-8 px-6 py-12 bg-white  "
+      <div className="flex flex-col lg:flex-row items-center gap-8 px-6 lg:py-12 bg-white  "
       >
         {/* Image Section */}
         <div className="lg:w-1/4 ">
           <img
             src="assets/About-us-hp.webp" // Replace with your actual image path
             alt="Astrology"
-            className=" min-w-full h-96 rounded-lg shadow-lg mx-auto"
+            className=" min-w-full  lg:h-96 rounded-lg shadow-lg mx-auto"
           />
         </div>
 
         {/* Text Section */}
-        <div className="lg:w-3/4 text-center lg:text-left" >
+        <div className="lg:w-3/4 text-center lg:text-left text-base" >
           <h3 className="text-red-600 text-l uppercase tracking-wider mb-2">
             -- You Are Welcome --
           </h3>
-          <h2 className="text-5xl font-bold text-gray-800 mb-4">
+          <h2 className=" text-2xl lg:text-5xl font-bold text-gray-800 mb-4">
             About The VahlayAstro...
           </h2>
           <p className="text-gray-700 mb-6">
@@ -407,11 +420,7 @@ const Home = () => {
       {/* Articles Carousel */}
 
 
-
-
-
-
-      <div className="py-12 bg-gray-50 text-center">
+      <div className="   py-6 lg:py-12 bg-gray-50 text-center">
         <div className="bg-red-600 py-4 px-4 mb-12 rounded-xl">
           <h2 className="text-center text-2xl font-bold text-white sm:text-3xl">
             Featured Articles
@@ -426,19 +435,19 @@ const Home = () => {
           loop={true} // Enable infinite looping
           breakpoints={{
             640: { slidesPerView: 2, loop: true }, // Show 2 slides for larger mobile screens
-            1024: { slidesPerView: 3, loop: false }, // Show 3 slides for tablets and above
+            1024: { slidesPerView: 3, loop: true }, // Show 3 slides for tablets and above
           }}
           spaceBetween={20} // Reduced space for better alignment
           navigation={true}
           pagination={{ clickable: true }}
           modules={[Navigation, Pagination]}
-          className="w-full mb-20"
+          className="w-full mb-6 lg:mb-20"
         >
           {data.map((article, index) => (
             <SwiperSlide key={index}>
               <Link to={`/article/${article.id}`}>
                 <div className="w-full p-4 bg-red-100 shadow-md rounded-xl border border-gray-300 hover:shadow-lg hover:-translate-y-1 transform 
-          transition-all duration-300 h-[600px] flex flex-col justify-between">
+          transition-all duration-300 h-auto  flex flex-col justify-between">
 
                   {/* Image with Fixed Height */}
                   <div className="bg-pink-100 p-4 rounded-lg mb-4">
@@ -446,18 +455,29 @@ const Home = () => {
                       <img
                         src={article.imageUrl}
                         alt="Article"
-                        className="w-full h-80 object-cover rounded-md shadow-md"
+                        className="w-full h-72 md:h-[350px] xl:h-[500px] object-cover rounded-md shadow-md"
                       />
                     )}
                   </div>
 
                   {/* Content */}
                   <div className="flex-grow">
-                    <h3 className="text-center text-lg font-medium text-gray-700 sm:text-xl line-clamp-2">
+                    {/* Title with Truncation */}
+                    <h3
+                      className="text-center text-base font-bold text-gray-700 sm:text-lg 
+                         whitespace-nowrap overflow-hidden text-ellipsis block"
+                      title={article.title} // Full title on hover
+                    >
                       {article.title}
                     </h3>
-                    <p className="text-sm text-gray-700 mb-4 line-clamp-3">
-                      {article.hindi?.substring(0, 100)}...
+
+                    {/* Description with Single Line & Truncation */}
+                    <p
+                      className="text-sm text-gray-700 mb-4 
+                         whitespace-nowrap overflow-hidden text-ellipsis block"
+                      title={article.hindi} // Full text on hover
+                    >
+                      {article.hindi?.substring(0, 80)}...
                     </p>
                   </div>
 
@@ -475,14 +495,9 @@ const Home = () => {
             </SwiperSlide>
           ))}
         </Swiper>
+
+
       </div>
-
-
-
-
-
-
-
 
 
 
@@ -491,7 +506,7 @@ const Home = () => {
       {/* Appointment section */}
 
       <div
-        className="relative h-auto bg-red-600 text-white py-16 px-6 flex flex-col items-center text-center my-40"
+        className="relative h-auto  bg-red-600 text-white lg:py-16 px-6 flex flex-col items-center text-center |lg:my-40 py-6"
         style={{
           backgroundImage: "url('/assets/wheel.png')", // Replace with your actual image path
           backgroundSize: "1500px", // Ensure the background covers the container
@@ -502,16 +517,15 @@ const Home = () => {
       >
 
 
-
         {/* Content */}
-        <div className="relative z-10 max-w-3xl">
-          <h2 className="text-4xl text-orange-200 font-bold mb-4">
+        <div className="relative z-10 max-w-3xl ">
+          <h2 className="  text-2xl lg:text-4xl text-orange-200 font-bold mb-4">
             Ready to Discover Your Path?
           </h2>
-          <p className="text-lg text-gray-300 mb-8">
+          <p className=" text-sm lg:text-lg text-gray-300 mb-8">
             Take the next step in your astrological journey with personalized guidance from our expert astrologers. Whether you’re seeking clarity on a specific life decision, curious about your birth chart, or looking for support during a challenging time, our consultations are designed to provide insight and direction.
           </p>
-          <p className="text-lg text-gray-300 mb-8">Schedule your session today!</p>
+          <p className=" text-base  lg:text-lg text-gray-300 mb-8">Schedule your session today!</p>
           <Link to="/appointment">
             <button className="bg-white text-red-600 py-3 px-8 rounded-full hover:bg-red-700 hover:text-white transform hover:scale-105 transition duration-300">
               Book Now
@@ -523,11 +537,11 @@ const Home = () => {
 
 
       {/* Consulting. */}
-      <div className="bg-gray-50 py-16 px-6 lg:px-20 flex flex-col lg:flex-row items-center">
+      <div className="bg-gray-50 py-6  md:py-16 px-6 lg:px-20 flex flex-col lg:flex-row items-center">
         {/* Text Section */}
-        <div className="lg:w-3/4  my-20 lg:mb-auto lg:pr-10 ">
+        <div className="lg:w-3/4  my-10  lg:my-auto lg:pr-10 ">
           <h2 className="text-3xl font-bold text-red-600 mb-4">What We Do...</h2>
-          <p className="text-gray-700 text-lg leading-relaxed mb-6">
+          <p className="text-gray-700 text-center lg:text-left text-sm lg:text-lg leading-relaxed mb-6">
             At...<strong> Vahlay Astro</strong>, we provide expert astrology consulting to guide you through life’s most pivotal decisions. Our personalized consultations offer deep insights into your birth chart, relationships, career, and life purpose, helping you navigate challenges and seize opportunities. With a focus on Vedic astrology, we empower you with actionable remedies and cosmic guidance to align with your true path. Our mission is to bring clarity, balance, and purpose to your journey, enabling you to make informed decisions and live a more fulfilling life.
           </p>
           <Link to={"/consulting"}>
@@ -557,7 +571,7 @@ const Home = () => {
       {/* Feedback Section */}
 
       <div
-        className="relative h-auto bg-red-600 text-white py-16 px-6 flex flex-col items-center text-center "
+        className="relative h-auto bg-red-600 text-white lg;py-16 px-6 flex flex-col items-center text-center "
         style={{
           backgroundImage: "url('/assets/wheel.png')", // Replace with your actual image path
           backgroundSize: "1500px", // Ensure the background covers the container
@@ -569,7 +583,7 @@ const Home = () => {
 
 
         <div className="relative z-10 max-w-3xl">
-          <h2 className="text-5xl font-bold mb-4 text-orange-200">
+          <h2 className=" text-2xl lg:text-5xl font-bold lg:mb-4 text-orange-200">
 
             Happy Client Testimonials
           </h2>
@@ -578,115 +592,161 @@ const Home = () => {
 
 
       {/* Grid Layout */}
-      <div className="flex justify-center my-20">
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
-          {testimonials.map((testimonial, index) => (
-            <div
-              key={index}
-              className={`p-6 rounded-xl shadow-lg hover:shadow-2xl transform transition duration-300 hover:scale-105 ${index % 2 === 0
-                ? "bg-red-600 text-white"
-                : "bg-white text-gray-800 dark:bg-red-800 dark:text-white"
-                }`}
-              style={{
-                backgroundImage: "url('assets/cardbg-hp.png')"
-              }}
-            >
-
-              <h3
-                className={`text-2xl font-semibold ${index % 2 === 0
-                  ? "text-white"
-                  : "text-gray-800 dark:text-white"
-                  }`}
-              >
-                {testimonial.name}
-              </h3>
-              <p
-                className={`text-sm mb-2 ${index % 2 === 0
-                  ? "text-white"
-                  : "text-gray-500 dark:text-gray-400"
-                  }`}
-              >
-                {testimonial.title}
-              </p>
+      <div className="flex justify-center my-10 lg:my-20">
+        {isMobile ? (
+          <Swiper
+            modules={[Pagination]}
+            pagination={{ clickable: true }}
+            spaceBetween={10}
+            slidesPerView={1}
+            className="w-full"
+          >
+            {testimonials.map((testimonial, index) => (
+              <SwiperSlide key={index}>
+                <div
+                  className={`p-6 mb-6 rounded-xl shadow-lg hover:shadow-2xl transform transition duration-300 hover:scale-105 ${index % 2 === 0
+                    ? "bg-red-600 text-white"
+                    : "bg-white text-gray-800 dark:bg-red-800 dark:text-white"
+                    }`}
+                  style={{ backgroundImage: "url('assets/cardbg-hp.png')" }}
+                >
+                  <h3
+                    className={` text-xl lg:text-2xl font-semibold ${index % 2 === 0 ? "text-white" : "text-gray-800 dark:text-white"
+                      }`}
+                  >
+                    {testimonial.name}
+                  </h3>
+                  <p
+                    className={` text-xs lg:text-sm mb-2 ${index % 2 === 0 ? "text-white" : "text-gray-500 dark:text-gray-400"
+                      }`}
+                  >
+                    {testimonial.title}
+                  </p>
+                  <div
+                    className={`flex justify-center gap-1 ${index % 2 === 0 ? "text-yellow-300" : "text-yellow-500"
+                      } mb-4`}
+                  >
+                    {Array.from({ length: testimonial.rating }).map((_, i) => (
+                      <span key={i}>&#9733;</span>
+                    ))}
+                  </div>
+                  <p
+                    className={` text-xs lg:text-sm ${index % 2 === 0 ? "text-white" : "text-gray-600 dark:text-gray-300"
+                      }`}
+                  >
+                    "{testimonial.quote}"
+                  </p>
+                </div>
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
+            {testimonials.map((testimonial, index) => (
               <div
-                className={`flex justify-center gap-1 ${index % 2 === 0 ? "text-yellow-300" : "text-yellow-500"
-                  } mb-4`}
-              >
-                {Array.from({ length: testimonial.rating }).map((_, i) => (
-                  <span key={i}>&#9733;</span> // Star symbol
-                ))}
-              </div>
-              <p
-                className={`text-sm ${index % 2 === 0
-                  ? "text-white"
-                  : "text-gray-600 dark:text-gray-300"
+                key={index}
+                className={`p-6 rounded-xl shadow-lg hover:shadow-2xl transform transition duration-300 hover:scale-105 ${index % 2 === 0
+                  ? "bg-red-600 text-white"
+                  : "bg-white text-gray-800 dark:bg-red-800 dark:text-white"
                   }`}
+                style={{ backgroundImage: "url('assets/cardbg-hp.png')" }}
               >
-                "{testimonial.quote}"
-              </p>
-            </div>
-          ))}
-        </div>
+                <h3
+                  className={`text-2xl font-semibold ${index % 2 === 0 ? "text-white" : "text-gray-800 dark:text-white"
+                    }`}
+                >
+                  {testimonial.name}
+                </h3>
+                <p
+                  className={`text-sm mb-2 ${index % 2 === 0 ? "text-white" : "text-gray-500 dark:text-gray-400"
+                    }`}
+                >
+                  {testimonial.title}
+                </p>
+                <div
+                  className={`flex justify-center gap-1 ${index % 2 === 0 ? "text-yellow-300" : "text-yellow-500"
+                    } mb-4`}
+                >
+                  {Array.from({ length: testimonial.rating }).map((_, i) => (
+                    <span key={i}>&#9733;</span>
+                  ))}
+                </div>
+                <p
+                  className={`text-sm ${index % 2 === 0 ? "text-white" : "text-gray-600 dark:text-gray-300"
+                    }`}
+                >
+                  "{testimonial.quote}"
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
 
       {/* Copartners Section */}
 
       <div className="flex flex-col items-center justify-center min-h-auto bg-gradient-to-br from-red-500 via-red-600 to-red-700 p-8">
         {/* Header */}
-        <h1 className="text-5xl font-extrabold text-white mb-16 text-center">
+        <h1 className="  text-2xl lg:text-5xl font-extrabold text-white mb-16 text-center">
           Our Partners
         </h1>
 
-        {/* Container for all logos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 w-full max-w-7xl">
-
-
-          {/* Second logo */}
-          <div className="relative flex flex-col items-center bg-white p-8 rounded-3xl shadow-lg transform hover:scale-105 transition-transform duration-300 hover:shadow-2xl">
-            <div className="absolute inset-0 w-full h-full bg-gradient-to-tr from-red-400 via-red-500 to-red-600 blur-3xl opacity-20 rounded-3xl -z-10"></div>
-            <div className="w-48 h-48 flex items-center justify-center bg-gray-100 border-4 border-red-500 rounded-full overflow-hidden transform hover:scale-110 transition-transform duration-300">
-              <img
-                src="/assets/Lakshya_logo-removebg-preview.png"
-                alt="Lakshya Logo"
-                className="object-contain
-           w-40 h-40"
-              />
-            </div>
-            <p className="mt-6 text-center text-lg font-bold text-red-600">
-              <a
-                href="#"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:underline"
-              >
-                LAKSHYA
-              </a>
-            </p>
+        {/* Display Swiper for mobile and grid for desktop */}
+        {isMobile ? (
+          <Swiper
+            modules={[Pagination]}
+            pagination={{ clickable: true }}
+            spaceBetween={10}
+            slidesPerView={1}
+            className="w-full max-w-7xl"
+          >
+            {partners.map((partner, index) => (
+              <SwiperSlide key={index}>
+                <div className="relative flex flex-col items-center bg-white p-2 mb-8 rounded-3xl shadow-lg transform hover:scale-105 transition-transform duration-300 hover:shadow-2xl">
+                  <div className="absolute inset-0 w-full h-full bg-gradient-to-tr from-red-400 via-red-500 to-red-600 blur-3xl opacity-20 rounded-3xl -z-10"></div>
+                  <div className="w-48 h-48 flex items-center justify-center bg-gray-100 border-4 border-red-500 rounded-full overflow-hidden transform hover:scale-110 transition-transform duration-300">
+                    <img
+                      src={partner.logo}
+                      alt={`${partner.name} Logo`}
+                      className="object-contain w-40 h-auto lg:h-40"
+                    />
+                  </div>
+                  <p className="mt-6 text-center text-base lg:text-lg font-bold text-red-600">
+                    <a
+                      href={partner.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline"
+                    >
+                      {partner.name}
+                    </a>
+                  </p>
+                </div>
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 w-full max-w-7xl">
+            {partners.map((partner, index) => (
+              <div key={index} className="relative flex flex-col items-center bg-white p-8 rounded-3xl shadow-lg transform hover:scale-105 transition-transform duration-300 hover:shadow-2xl">
+                <div className="absolute inset-0 w-full h-full bg-gradient-to-tr from-red-400 via-red-500 to-red-600 blur-3xl opacity-20 rounded-3xl -z-10"></div>
+                <div className="w-48 h-48 flex items-center justify-center bg-gray-100 border-4 border-red-500 rounded-full overflow-hidden transform hover:scale-110 transition-transform duration-300">
+                  <img src={partner.logo} alt={`${partner.name} Logo`} className="object-contain w-40 h-40" />
+                </div>
+                <p className="mt-6 text-center text-lg font-bold text-red-600">
+                  <a href={partner.link} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                    {partner.name}
+                  </a>
+                </p>
+              </div>
+            ))}
           </div>
-
-          {/* Third logo */}
-          <div className="relative flex flex-col items-center bg-white p-8 rounded-3xl shadow-lg transform hover:scale-105 transition-transform duration-300 hover:shadow-2xl">
-            <div className="absolute inset-0 w-full h-full bg-gradient-to-tr from-red-400 via-red-500 to-red-600 blur-3xl opacity-20 rounded-3xl -z-10"></div>
-            <div className="w-48 h-48 flex items-center justify-center bg-gray-100 border-4 border-red-500 rounded-full overflow-hidden transform hover:scale-110 transition-transform duration-300">
-              <img
-                src="/assets/VahalyConsulting logo.webp"
-                alt="Vahlay Consulting Logo"
-                className="object-contain w-40 h-40"
-              />
-            </div>
-            <p className="mt-6 text-center text-lg font-bold text-red-600">
-              <a
-                href="https://vahlayconsulting.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:underline"
-              >
-                Vahlay Consulting
-              </a>
-            </p>
-          </div>
-        </div>
+        )}
       </div>
+
+
+
     </div>
   );
 };

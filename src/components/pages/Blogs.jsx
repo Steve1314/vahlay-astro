@@ -52,13 +52,13 @@ const ArticlesPage = () => {
           
             {data.map((article, index) => (
             <Link to={`/article/${article.id}`} key={index}>
-            <div className="bg-white shadow-md rounded-lg p-6 flex flex-col justify-between h-[610px]"> 
+            <div className="bg-white shadow-md rounded-lg p-6 flex flex-col justify-between h-full"> 
               {/* Image with fixed height */}
               {article.imageUrl && (
                 <img
                   src={article.imageUrl}
                   alt="Article"
-                  className="w-full h-90 mb-4 rounded-md shadow-md object-cover" // Fixed height
+                  className="w-full h-72 md:h-[500PX] mb-4 rounded-md shadow-md object-cover" // Fixed height
                 />
               )}
               <div className="flex-grow">

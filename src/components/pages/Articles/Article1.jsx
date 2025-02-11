@@ -67,7 +67,7 @@ const ArticlePage = () => {
     <div className="bg-ivory min-h-screen">
       {/* Article Header */}
       <div className="bg-red-600  border-t-2   border-orange-100 py-12 px-4 md:px-20  ">
-        <h1 className="text-4xl font-bold text-center text-white tracking-wide">Astrology Articles and Publications</h1>
+        <h1 className="  text-2xl md:text-4xl font-bold text-center text-white tracking-wide">Astrology Articles and Publications</h1>
         <div className="flex justify-center mt-4 text-sm text-white space-x-4">
           {article ? (
             <>
@@ -91,23 +91,23 @@ const ArticlePage = () => {
             onClick={toggleLanguage}
             className="bg-red-600 text-white px-6 py-2 rounded-lg mb-6 hover:bg-red-700 transition"
           >
-            {language === "hindi" ? "Read in English" : "हिंदी में पढ़ें"}
+            {language === "hindi" ? " Read in English" : "हिंदी में पढ़ें"}
           </button>
           <div className="flex items-center justify-center">
             {article && article.imageUrl && (
               <img
                 src={article.imageUrl} // Directly use the image URL stored in Firestore
                 alt="Article"
-                className="w-auto h-96 mb-6 rounded-lg shadow-md border-2 border-red-600"
+                className="w-auto h-60 md:h-96 mb-6 rounded-lg shadow-md border-2 border-red-600"
               />
             )}
           </div>
-          <h1 className="text-3xl font-bold text-red-600 mb-4 tracking-wide">
+          <h1 className=" text-xl  md:text-3xl font-bold text-red-600 mb-4 tracking-wide">
             {article ? (language === "hindi" ? article.hindi : article.title) : "Loading..."}
           </h1>
 
           {article ? (
-            <p className="text-gray-800 leading-relaxed whitespace-pre-line">
+            <p className="text-gray-800  text-sm md:text-lg leading-relaxed whitespace-pre-line">
               {language === "hindi" ? article.dhindi : article.denglish}
             </p>
           ) : (
@@ -122,15 +122,15 @@ const ArticlePage = () => {
         {/* All Articles */}
         <div className="bg-ivory border border-red-600 p-8 rounded-lg shadow-lg mt-4">
           <h3 className="text-xl text-red-600 font-bold mb-6 text-center">Articles</h3>
-          <ul className="space-y-4">
+          <ul className="  md:space-y-6">
             {faqs.map((article, index) => (
               <li key={index} className="flex items-center">
                 <div className="w-2 h-2 bg-red-600 rounded-full mr-4"></div>
                 <Link
                   to={`/article/${article.id}`}
-                  className="text-red-600 text-base font-medium hover:underline transition duration-200"
+                  className="text-red-600  text-sm mb-0 md:mb-4 md:text-base font-medium hover:underline transition duration-200"
                 >
-                  {article.title}
+                  {language === "hindi" ? article.hindi : article.title}
                 </Link>
               </li>
             ))}
@@ -150,7 +150,7 @@ const ArticlePage = () => {
                   onClick={() => toggleAccordion(index)}
                   className="w-full text-left px-4 py-3 focus:outline-none flex justify-between items-center"
                 >
-                  <span className="text-lg text-white font-medium tracking-wide">
+                  <span className=" text-sm   md:text-lg text-white font-medium tracking-wide">
                     {language === "hindi" ? faq.hindi : faq.title}
                   </span>
                   <span className="text-white">{expanded === index ? "▲" : "▼"}</span>

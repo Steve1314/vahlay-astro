@@ -1,41 +1,42 @@
-
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import {
-  collection,
-  getDocs,
-  doc,
-  getDoc,
-  updateDoc,
-} from "firebase/firestore";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { collection, getDocs, doc, getDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { PieChart } from "react-minimal-pie-chart";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { db } from "../../firebaseConfig";
+import QandASection from "./QuestionAndAns"; // Import the Q&A section component
+
+
+
+import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/pagination";
+import { Navigation, Pagination } from "swiper/modules";
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+
 
 const PersonalCourse = () => {
   const { courseName } = useParams();
+  const navigate = useNavigate();
   const [videos, setVideos] = useState([]);
   const [studyMaterials, setStudyMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [watchedVideos, setWatchedVideos] = useState(0);
+  const [watchedVideos, setWatchedVideos] = useState([]); // Track watched video IDs (only for paid courses)
   const [validityPercentage, setValidityPercentage] = useState("0");
   const [totalVideos, setTotalVideos] = useState(0);
   const [userEmail, setUserEmail] = useState(null);
-  const modulesCoveredPercentage = Math.round((watchedVideos / totalVideos) * 100);
   const [activeVideo, setActiveVideo] = useState(null);
   const [meetingUrl, setMeetingUrl] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [courseType, setCourseType] = useState(null);
-
-  const [formData, setFormData] = useState({
-    profilePic: "",
-    fullName: "NA",
-    fathersName: "NA",
-    mothersName: "NA",
-    dob: "NA",
-    email: "NA",
-  });
+  const [groupedVideos, setGroupedVideos] = useState({});
+ const [formData, setFormData] = useState({
+     profilePic: "",
+    
+     email: "NA",
+   });
 
   const auth = getAuth();
 
@@ -51,9 +52,11 @@ const PersonalCourse = () => {
         const courseSnapshot = await getDoc(courseDoc);
 
         if (courseSnapshot.exists()) {
+          // Assume the free course doc has a "type" field which will be "free"
           setCourseType(courseSnapshot.data().type);
         }
 
+        // Fetch Videos
         const videosRef = collection(db, `videos_${courseName}`);
         const videosSnapshot = await getDocs(videosRef);
         const fetchedVideos = videosSnapshot.docs.map((doc) => ({
@@ -61,8 +64,23 @@ const PersonalCourse = () => {
           ...doc.data(),
         }));
         setVideos(fetchedVideos);
-        setTotalVideos(fetchedVideos.length);
 
+        // ✅ Correct total videos count
+        let totalVideoCount = fetchedVideos.length;
+        setTotalVideos(totalVideoCount);
+
+        // ✅ Group videos dynamically
+        const grouped = {};
+        fetchedVideos.forEach((video) => {
+          const normalizedTitle = video.title.trim().toLowerCase();
+          if (!grouped[normalizedTitle]) {
+            grouped[normalizedTitle] = [];
+          }
+          grouped[normalizedTitle].push(video);
+        });
+        setGroupedVideos(grouped);
+
+        // Fetch Study Materials
         const materialsRef = collection(db, `materials_${courseName}`);
         const materialsSnapshot = await getDocs(materialsRef);
         const fetchedMaterials = materialsSnapshot.docs.map((doc) => ({
@@ -77,49 +95,62 @@ const PersonalCourse = () => {
 
           if (subscriptionSnapshot.exists()) {
             const subscriptionData = subscriptionSnapshot.data();
-            const courseDetails = subscriptionData.DETAILS.find(
-              (detail) => Object.keys(detail)[0] === courseName
-            );
 
-            if (courseDetails) {
-              const courseInfo = courseDetails[courseName];
-              const isFreeCourse = courseInfo.isFree;
-
-              if (isFreeCourse) {
-                setValidityPercentage(null);
-              } else {
-                let daysLeft = 0;
-                let usedDays = 0;
-                let totalDays = 0;
-
-                if (courseInfo.subscriptionDate && courseInfo.expiryDate) {
-                  const subDate = new Date(courseInfo.subscriptionDate);
-                  const expDate = new Date(courseInfo.expiryDate);
-                  const now = new Date();
-
-                  const totalTime = expDate.getTime() - subDate.getTime();
-                  totalDays = Math.floor(totalTime / (1000 * 3600 * 24));
-
-                  const usedTime = now.getTime() - subDate.getTime();
-                  usedDays =
-                    usedTime > 0
-                      ? Math.floor(usedTime / (1000 * 3600 * 24))
-                      : 0;
-
-                  const rawDaysLeft = totalDays - usedDays;
-                  daysLeft = rawDaysLeft < 0 ? 0 : rawDaysLeft;
-                }
-
-                if (totalDays > 0) {
-                  const validityPercent = Math.floor((daysLeft / totalDays) * 100);
-                  setValidityPercentage(validityPercent.toString());
-                } else {
-                  setValidityPercentage("0");
-                }
+            if (courseType === "free") {
+              // For free courses, check the "freecourses" field (an array of course names)
+              if (
+                subscriptionData.freecourses &&
+                subscriptionData.freecourses.includes(courseName)
+              ) {
+                // Free courses do not track progress in the same way.
+                setWatchedVideos([]); // No watched videos tracking for free courses.
               }
+            } else {
+              // For paid courses
+              const courseDetails = subscriptionData.DETAILS.find(
+                (detail) => Object.keys(detail)[0] === courseName
+              );
 
-              const watched = courseInfo.watchedVideos || 0;
-              setWatchedVideos(watched);
+              if (courseDetails) {
+                const courseInfo = courseDetails[courseName];
+                const isFreeCourse = courseInfo.isFree;
+
+                if (isFreeCourse) {
+                  setValidityPercentage(null);
+                } else {
+                  let daysLeft = 0;
+                  let usedDays = 0;
+                  let totalDays = 0;
+
+                  if (courseInfo.subscriptionDate && courseInfo.expiryDate) {
+                    const subDate = new Date(courseInfo.subscriptionDate);
+                    const expDate = new Date(courseInfo.expiryDate);
+                    const now = new Date();
+
+                    const totalTime = expDate.getTime() - subDate.getTime();
+                    totalDays = Math.floor(totalTime / (1000 * 3600 * 24));
+
+                    const usedTime = now.getTime() - subDate.getTime();
+                    usedDays =
+                      usedTime > 0
+                        ? Math.floor(usedTime / (1000 * 3600 * 24))
+                        : 0;
+
+                    const rawDaysLeft = totalDays - usedDays;
+                    daysLeft = rawDaysLeft < 0 ? 0 : rawDaysLeft;
+                  }
+
+                  if (totalDays > 0) {
+                    const validityPercent = Math.floor((daysLeft / totalDays) * 100);
+                    setValidityPercentage(validityPercent.toString());
+                  } else {
+                    setValidityPercentage("0");
+                  }
+                }
+
+                // ✅ Fetch watched videos count correctly for paid courses
+                setWatchedVideos(courseInfo.watchedVideos || []);
+              }
             }
           }
         }
@@ -131,112 +162,150 @@ const PersonalCourse = () => {
     };
 
     fetchCourseData();
-  }, [courseName, userEmail]);
+  }, [courseName, userEmail, courseType]);
 
-  useEffect(() => {
-    const auth = getAuth();
-    const currentUser = auth.currentUser;
-
-    if (currentUser) {
-      setUser(currentUser);
-
-      // Fetch user profile from Firestore
-      const fetchProfile = async () => {
-        const userDocRef = doc(db, "students", currentUser.uid);
-        const userDoc = await getDoc(userDocRef);
-
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          setFormData({
-            profilePic: userData.profilePic || "",
-            fullName: userData.fullName || "NA",
-            fathersName: userData.fathersName || "NA",
-            mothersName: userData.mothersName || "NA",
-            dob: userData.dob || "NA",
-            email: currentUser.email || "NA",
-          });
-        } else {
-          // If user profile doesn't exist, set default values
-          setFormData({
-            profilePic: "",
-            fullName: "NA",
-            fathersName: "NA",
-            mothersName: "NA",
-            dob: "NA",
-            email: currentUser.email || "NA",
-          });
-        }
-
-        setLoading(false); // Set loading to false once the profile is fetched
-      };
-
-      fetchProfile();
-    } else {
-      setLoading(false); // In case no user is logged in, stop loading
-    }
-  }, [db]); // Dependency array ensures it only runs once on mount
-
-  // Subscription Validity Component
   const SubscriptionValidity = () => {
     if (courseType === "free") {
       return null;
     }
 
     return (
-      <div className="bg-red-100 p-4 rounded-lg shadow-md">
-      <h3 className="text-lg font-semibold text-center text-red-600 mb-2">
-                  Subscription Validity
-      </h3>
-                {typeof validityPercentage === "string" && validityPercentage === "Lifetime Access" ? (
-      <p className="text-center text-xl text-red-700">Lifetime Access</p>
-                ) : validityPercentage === "0" ? (
-      <p className="text-center text-xl text-red-700">Expired</p>
-                ) : (
-      <div>
-      <PieChart
-                      data={[
-                        { title: "Remaining", value: parseInt(validityPercentage), color: "#FF5252" },
-                        { title: "Expired", value: 100 - parseInt(validityPercentage), color: "#fcfafa" },
-                      ]}
-                      lineWidth={20}
-                      rounded
-                      animate
-                    />
-      <p className="text-center mt-2 text-red-700">
-                      {validityPercentage}% Validity Remaining
-      </p>
+      <div className="bg-red-100 p-4 rounded-lg shadow-md w-72 h-auto ">
+        <h3 className="text-lg font-semibold text-center text-red-600 mb-2">
+          Subscription Validity
+        </h3>
+        {typeof validityPercentage === "string" && validityPercentage === "Lifetime Access" ? (
+          <p className="text-center text-xl text-red-700">Lifetime Access</p>
+        ) : validityPercentage === "0" ? (
+          <p className="text-center text-xl text-red-700">Expired</p>
+        ) : (
+          <div>
+            <PieChart
+              data={[
+                { title: "Remaining", value: parseInt(validityPercentage), color: "#FF5252" },
+                { title: "Expired", value: 100 - parseInt(validityPercentage), color: "#fcfafa" },
+              ]}
+              lineWidth={20}
+              rounded
+              animate
+            />
+            <p className="text-center mt-2 text-red-700">
+              {validityPercentage}% Validity Remaining
+            </p>
+          </div>
+        )}
       </div>
-                )}
-      </div>
-           );
-         };
-      
-  // Mark video as watched and persist in Firestore
+    );
+  };
+
+  // Track watched videos in real-time (only for paid courses)
+  useEffect(() => {
+    if (!userEmail || courseType === "free") return;
+
+    const userSubscriptionRef = doc(db, "subscriptions", userEmail);
+
+    // ✅ Listen for real-time updates
+    const unsubscribe = onSnapshot(userSubscriptionRef, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        let subscriptionData = docSnapshot.data();
+        let courseDetails = subscriptionData.DETAILS.find(
+          (detail) => Object.keys(detail)[0] === courseName
+        );
+
+        if (courseDetails) {
+          let watchedVideosList = courseDetails[courseName].watchedVideos || [];
+          setWatchedVideos(watchedVideosList);
+        }
+      }
+    });
+
+    return () => unsubscribe(); // Cleanup on unmount
+  }, [courseName, userEmail, courseType]);
+
+  // Calculate modules covered dynamically (only for paid courses)
+  const calculateModulesCovered = () => {
+    if (courseType === "free") return 0;
+    if (!groupedVideos || !watchedVideos) return 0;
+
+    let modulesCovered = 0;
+
+    // Iterate through each module (title)
+    Object.keys(groupedVideos).forEach((title) => {
+      const videosInModule = groupedVideos[title];
+      const totalVideosInModule = videosInModule.length;
+
+      // Count how many videos in this module are watched
+      const watchedVideosInModule = videosInModule.filter((video) =>
+        watchedVideos.includes(video.id)
+      ).length;
+
+      // If all videos in the module are watched, consider it covered
+      if (watchedVideosInModule === totalVideosInModule) {
+        modulesCovered++;
+      }
+    });
+
+    return modulesCovered;
+  };
+
+  const modulesCovered = calculateModulesCovered();
+  const totalModules = Object.keys(groupedVideos).length;
+  const modulesCoveredPercentage =
+    totalModules > 0 ? Math.round((modulesCovered / totalModules) * 100) : 0;
+
+  // Calculate percentage of watched videos (only for paid courses)
+  const calculateWatchedPercentage = () => {
+    if (courseType === "free") return 0;
+    if (totalVideos === 0) return 0;
+    return Math.round((watchedVideos.length / totalVideos) * 100);
+  };
+
+  const watchedPercentage = calculateWatchedPercentage();
+
+  // Mark video as watched and persist in Firestore (only for paid courses)
   const handleMarkAsWatched = async (videoId) => {
+    if (!userEmail) return;
+    if (courseType === "free") {
+      // For free courses, progress tracking is not available.
+      return;
+    }
     try {
-      const newWatchedCount = watchedVideos + 1;
-      setWatchedVideos(newWatchedCount);
+      const userSubscriptionRef = doc(db, "subscriptions", userEmail);
+      const subscriptionSnapshot = await getDoc(userSubscriptionRef);
 
-      if (userEmail) {
-        const userSubscriptionRef = doc(db, "subscriptions", userEmail);
-        const subscriptionSnapshot = await getDoc(userSubscriptionRef);
+      if (subscriptionSnapshot.exists()) {
+        let subscriptionData = subscriptionSnapshot.data();
+        let courseDetails = subscriptionData.DETAILS.find(
+          (detail) => Object.keys(detail)[0] === courseName
+        );
 
-        if (subscriptionSnapshot.exists()) {
-          const subscriptionData = subscriptionSnapshot.data();
-          const updatedDetails = subscriptionData.DETAILS.map((detail) => {
-            const courseKey = Object.keys(detail)[0];
-            if (courseKey === courseName) {
-              return {
-                [courseKey]: {
-                  ...detail[courseKey],
-                  watchedVideos: newWatchedCount,
-                },
-              };
-            }
-            return detail;
-          });
+        if (courseDetails) {
+          let updatedWatchedVideos = courseDetails[courseName].watchedVideos || [];
 
-          await updateDoc(userSubscriptionRef, { DETAILS: updatedDetails });
+          // ✅ If video is already watched, do nothing
+          if (!updatedWatchedVideos.includes(videoId)) {
+            updatedWatchedVideos.push(videoId);
+
+            // ✅ Update Firestore
+            let updatedDetails = subscriptionData.DETAILS.map((detail) => {
+              const courseKey = Object.keys(detail)[0];
+
+              if (courseKey === courseName) {
+                return {
+                  [courseKey]: {
+                    ...detail[courseKey],
+                    watchedVideos: updatedWatchedVideos,
+                  },
+                };
+              }
+              return detail;
+            });
+
+            await updateDoc(userSubscriptionRef, { DETAILS: updatedDetails });
+
+            // ✅ Update local state in real-time
+            setWatchedVideos(updatedWatchedVideos);
+          }
         }
       }
     } catch (error) {
@@ -331,10 +400,10 @@ const PersonalCourse = () => {
 
         {/* Profile Info */}
         <div className="p-6 flex flex-col items-center">
-          <img
+        <img
             src={formData.profilePic || "https://via.placeholder.com/100"}
             alt="Profile"
-            className="rounded-full mb-4 w-24 h-24 object-cover"
+            className="rounded-full mb-4 w-20 h-20 border-2 border-white"
           />
           <h2 className="text-lg font-bold">
             {user?.displayName || "User"}
@@ -382,9 +451,9 @@ const PersonalCourse = () => {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-6">
+      <main className="flex-1 lg:p-6">
         {/* Course Heading */}
-        <h1 className="text-3xl md:text-4xl font-bold mb-6 text-red-600 text-center">
+        <h1 className="text-2xl lg:text-4xl font-bold mb-6 text-red-600 text-center">
           {courseName}
         </h1>
 
@@ -399,104 +468,171 @@ const PersonalCourse = () => {
         </marquee>
 
         {/* Top Row: Charts and Study Materials */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-          <SubscriptionValidity />
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 px-6 iteams-center">
+          {courseType !== "free" && <SubscriptionValidity />}
 
-          {/* Modules Covered */}
-          <div className="bg-red-100 p-4 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold text-center text-red-600 mb-2">
-              Modules Covered
-            </h3>
-            <PieChart
-              data={[
-                { title: "Watched", value: watchedVideos, color: "#fcfafa" },
-                {
-                  title: "Remaining",
-                  value: totalVideos - watchedVideos,
-                  color: "#FF5252",
-                },
-              ]}
-              lineWidth={20}
-              rounded
-              animate
-              label={({ dataEntry }) => `${Math.round(dataEntry.percentage)}%`}
-              labelStyle={{
-                fontSize: "6px",
-                fill: "#000",
-              }}
-              labelPosition={75}
-            />
-            <p className="text-center mt-2 text-red-700">
-              {watchedVideos}/{totalVideos} Modules Covered (
-              {modulesCoveredPercentage}%)
-            </p>
-          </div>
+          {/* Course Progress */}
+          {courseType !== "free" ? (
+            <div className="bg-red-100 p-4 rounded-lg shadow-md w-64 h-auto   ">
+              <h3 className="text-lg font-semibold text-center text-red-600 mb-2">
+                Course Progress
+              </h3>
+             <div>
+             <PieChart
+                data={[
+                  { title: "Watched", value: watchedPercentage, color: "#FF5252" }, // Green for watched
+                  { title: "Remaining", value: 100 - watchedPercentage, color: "#fcfafa" }, // Red for remaining
+                ]}
+                lineWidth={20}
+                rounded
+                animate
+                label={({ dataEntry }) => `${Math.round(dataEntry.percentage)}%`} // Show percentage
+                labelStyle={{
+                  fontSize: "6px",
+                  fill: "#000",
+                }}
+                labelPosition={75}
+              />
+             </div>
+              <p className="text-center mt-2 text-red-700">
+                {watchedVideos.length}/{totalVideos} Videos Watched ({watchedPercentage}%)
+              </p>
+            </div>
+          ) : (
+            <div className="bg-red-100 p-4 rounded-lg shadow-md">
+              <h3 className="text-lg font-semibold text-center text-red-600 mb-2">
+                Course Progress
+              </h3>
+              <p className="text-center mt-2 text-red-700">
+                Progress tracking is not available for free courses.
+              </p>
+            </div>
+          )}
 
-          {/* Study Materials */}
-          <div className="bg-white p-4 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold text-center text-red-600 mb-2">
-              Study Materials
-            </h3>
-            <div className="flex flex-col gap-4">
+          {/* Modules Covered (only for paid courses) */}
+          {courseType !== "free" && totalModules > 0 && (
+            <div className="bg-red-100 p-4 rounded-lg shadow-md w-64 h-auto ">
+              <h3 className="text-lg font-semibold text-center text-red-600 mb-2">
+                Modules Covered
+              </h3>
+              <div>
+              <PieChart
+                data={[
+                  { title: "Watched", value: modulesCovered, color: "#FF5252" },
+                  { title: "Remaining", value: totalModules - modulesCovered, color: "#fcfafa" },
+                ]}
+                lineWidth={20}
+                rounded
+                animate
+                label={({ dataEntry }) => `${Math.round(dataEntry.percentage)}%`}
+                labelStyle={{
+                  fontSize: "6px",
+                  fill: "#000",
+                }}
+                labelPosition={75}
+              />
+              </div>
+              <p className="text-center mt-2 text-red-700">
+                {modulesCovered}/{totalModules} Modules Covered ({modulesCoveredPercentage}%)
+              </p>
+            </div>
+          )}
+
+          {/* Show Study Materials Only if Available */}
+          {studyMaterials.length > 0 && (
+            <div className="bg-white p-4 w-64 h-auto rounded-lg shadow-md">
+              <h3 className="text-lg font-semibold text-center text-red-600 mb-2">
+                Study Materials
+              </h3>
               {studyMaterials.map((material) => (
                 <div key={material.id} className="p-2 bg-gray-100 rounded shadow">
-                  <h4 className="text-gray-700 font-semibold">
-                    {material.title}
-                  </h4>
+                  <h4 className="text-gray-700 font-semibold">{material.title}</h4>
                   <a
                     href={material.url}
                     download
-                    className="text-blue-500 hover:underline"
-                    onClick={() =>
-                      alert(`You have successfully downloaded ${material.title}!`)
-                    }
+                    className="text-white bg-blue-500 px-4 py-2 rounded hover:bg-blue-600"
                   >
                     Download
                   </a>
                 </div>
               ))}
             </div>
-          </div>
+          )}
         </div>
 
-             {/* Videos Section */}
-        <div className="bg-white p-4 rounded-lg shadow-md mb-8">
-           <h2 className="text-lg md:text-xl font-semibold mb-6 text-red-600 text-center">
-             Videos
-           </h2>
-           <div className="grid grid-cols-1 gap-4 md:gap-6">
-            {videos.map((video) => (
-               <div
-                 key={video.id}
-                className="bg-white shadow-md rounded-lg p-3 md:p-4"
-              >
-                 <h3
-                  className="text-base md:text-lg font-semibold mb-2 text-gray-700 cursor-pointer flex justify-between items-center"
-                   onClick={() => toggleVideoVisibility(video.id)}                >
-                   {video.title}
-                  <span className="ml-2 text-gray-500">
-                    {activeVideo === video.id ? "▲" : "▼"}
-                  </span>
-                 </h3>
-                 {activeVideo === video.id && (
-                 <video
-                    src={video.url}
-                    controls
-                    className="w-full h-48 md:h-56 bg-black rounded"
-                   controlsList="nodownload"
-                    onContextMenu={(e) => e.preventDefault()}
-                    onEnded={() => handleMarkAsWatched(video.id)}
-                  >
-                     Your browser does not support the video tag.
-                  </video>
-             )}
-              </div>
-            ))}
+        {/* Videos Section */}
+        <div className="px-6 mt-8">
+      <h2 className="text-xl font-bold text-red-600 mb-4">Course Videos</h2>
+      {Object.keys(groupedVideos).map((title, index) => (
+        <div key={index} className="mb-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">{title}</h3>
+
+          {/* Swiper Container */}
+          <div className="relative">
+            {/* Left Navigation Button */}
+            <div className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10">
+              <button >
+                <FaChevronLeft className="swiper-button-prev   text-red-600 bg-white rounded-full"  />
+              </button>
+            </div>
+
+            <Swiper
+              modules={[Navigation, Pagination]}
+              navigation={{
+                nextEl: ".swiper-button-next",
+                prevEl: ".swiper-button-prev",
+              }}
+              pagination={{ clickable: true }}
+              spaceBetween={10}
+              slidesPerView={1} // Default for mobile
+              breakpoints={{
+                640: { slidesPerView: 2 }, // Medium screen (2 videos)
+                1024: { slidesPerView: 5 }, // Large screen (5 videos)
+              }}
+              className="max-w-7xl "
+            >
+              {groupedVideos[title].map((video) => (
+                <SwiperSlide key={video.id}>
+                  <div className="bg-white  shadow-md rounded-lg overflow-hidden transition-transform transform hover:scale-105">
+                    <Link to={`/course/${courseName}/video/${video.id}`}>
+                    <video
+                      src={video.url}
+                      controls
+                      className="w-full h-40 bg-black rounded"
+                      controlsList="nodownload"
+                      onEnded={() => handleMarkAsWatched(video.id)}
+                    />
+                   
+                    <div className="p-3">
+                      
+                    <Link to={`/course/${courseName}/video/${video.id}`}><p className="text-red-700 font-semibold text-sm truncate mb-6">{video.description}</p></Link>
+                    </div>
+                    </Link>
+                  </div>
+                </SwiperSlide>
+              ))}
+            </Swiper>
+
+            {/* Right Navigation Button */}
+            <div className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10">
+              <button >
+                <FaChevronRight  className=" swiper-button-next text-red-600 bg-white rounded-full    " />
+              </button>
+            </div>
           </div>
-         </div>
-       </main>
-     </div>
-   );
- };
+        </div>
+      ))}
+    </div>
+
+  {/* ***** New Q&A Section ***** */}
+  <QandASection courseName={courseName} />
+
+
+      </main>
+    </div>
+  );
+};
 
 export default PersonalCourse;
+
+

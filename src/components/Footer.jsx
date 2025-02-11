@@ -10,12 +10,16 @@ const Footer = () => {
       <div
         className="absolute inset-0"
         style={{
-          backgroundImage: "url('/assets/footer-bg.jpg')", // Replace with your actual image path
+          backgroundImage: "url('/assets/footer_BG.png')", // Replace with your actual image path
+          // backgroundImage: "url('/assets/footer-bg.jpg')", // Replace with your actual image path
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
         }}
-      ></div>
+      >
+        {/* Background Overlay */}
+        <div className="absolute inset-0 bg-gray-800 opacity-30"></div>
+      </div>
 
       
       {/* Content */}

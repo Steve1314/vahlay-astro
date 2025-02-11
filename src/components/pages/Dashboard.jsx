@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link, Routes, Route } from "react-router-dom";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
@@ -8,7 +9,7 @@ import EnrollCourse from "./EnrolledCourses";
 const Dashboard = () => {
   const [user, setUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false); // For mobile sidebar toggle
-  const [loading, setLoading] = useState(true); // Loading state to prevent flickering
+  const [loading, setLoading] = useState(true); // Prevent flickering while loading
   const [formData, setFormData] = useState({
     profilePic: "",
     fullName: "NA",
@@ -56,12 +57,12 @@ const Dashboard = () => {
           });
         }
 
-        setLoading(false); // Set loading to false once the profile is fetched
+        setLoading(false); // Stop loading once the profile is fetched
       };
 
       fetchProfile();
     } else {
-      setLoading(false); // In case no user is logged in, stop loading
+      setLoading(false); // If no user is logged in, stop loading
     }
   }, [db]);
 
@@ -77,31 +78,43 @@ const Dashboard = () => {
   }, [auth, navigate]);
 
   useEffect(() => {
-    navigate("/enrolledcourse"); // Default view when Dashboard is loaded
+    navigate("/enrolledcourse"); // ✅ Ensure default view is "Enrolled Courses"
   }, [navigate]);
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-gray-100 min-h-screen">
+    <div className="flex flex-col md:flex-row min-h-screen bg-gray-100">
+      {/* Mobile Sidebar Toggle Button */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="md:hidden fixed top-4 left-4 bg-red-500 text-white p-2 rounded z-50"
+      >
+        ☰
+      </button>
+
       {/* Sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 bg-gradient-to-b from-red-600 to-red-500 text-white shadow-lg z-50 transform ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } md:relative md:translate-x-0 transition-transform duration-300`}
+        } md:relative md:translate-x-0 transition-transform duration-300 w-64`}
       >
         <div className="p-6 flex flex-col items-center">
+          {/* Show Default Profile Icon if No Image */}
           <img
-            src={formData.profilePic}
+            src={formData.profilePic || "https://via.placeholder.com/100"}
             alt="Profile"
-            className="rounded-full mb-4 w-24 h-24"
+            className="rounded-full mb-4 w-24 h-24 object-cover border-2 border-white"
           />
-          <h2 className="text-lg font-bold">{user?.displayName || "User"}</h2>
+          <h2 className="text-lg font-bold">{formData.fullName || "User"}</h2>
         </div>
+
+        {/* Sidebar Navigation */}
         <nav className="p-4">
           <ul className="space-y-4">
             <li>
               <Link
                 to="/profile"
                 className="block p-3 bg-red-500 hover:bg-red-400 rounded transition"
+                onClick={() => setSidebarOpen(false)} // ✅ Close sidebar on mobile
               >
                 My Profile
               </Link>
@@ -110,6 +123,7 @@ const Dashboard = () => {
               <Link
                 to="/enrolledcourse"
                 className="block p-3 bg-red-500 hover:bg-red-400 rounded transition"
+                onClick={() => setSidebarOpen(false)}
               >
                 Enrolled Courses
               </Link>
@@ -118,6 +132,7 @@ const Dashboard = () => {
               <Link
                 to="/courses"
                 className="block p-3 bg-red-500 hover:bg-red-400 rounded transition"
+                onClick={() => setSidebarOpen(false)}
               >
                 Add Courses
               </Link>
@@ -126,6 +141,7 @@ const Dashboard = () => {
               <Link
                 to="/finalize"
                 className="block p-3 bg-red-500 hover:bg-red-400 rounded transition"
+                onClick={() => setSidebarOpen(false)}
               >
                 Payment
               </Link>
@@ -134,25 +150,7 @@ const Dashboard = () => {
         </nav>
       </aside>
 
-      {/* Mobile Sidebar Toggle */}
-      <button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="md:hidden absolute top-4 left-4 bg-red-500 text-white p-2 rounded z-50"
-      >
-        ☰
-      </button>
 
-      {/* Main Content */}
-      <main className="flex-1 p-6 md:ml-64">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">
-          Welcome, {user?.displayName || "User"}!
-        </h1>
-
-        {/* Enrolled Courses */}
-        <Routes>
-          <Route path="/enrolledcourse" element={<EnrollCourse />} />
-        </Routes>
-      </main>
     </div>
   );
 };

@@ -19,7 +19,7 @@
   /* Optional: If you're using Google Fonts, skip this step */
  
   @layer base {
-    h1, h2 ,h3 {
+    h1, h2 ,h3,h6 {
       font-family: "Bantagas", sans-serif; /* Use Bantagas for headings */
     }  
  

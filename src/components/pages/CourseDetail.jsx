@@ -1,13 +1,22 @@
+
+
+
+
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { db } from "../../firebaseConfig"; // Firebase config file
 import { doc, getDoc } from "firebase/firestore";
+import { useParams } from "react-router-dom";
 
-const EnrollmentPage = () => {
+const CourseDetail = () => {
   const [courseData, setCourseData] = useState(null);
   const [loading, setLoading] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
+
+
+  const { courseId, courseType } = useParams()
+
 
   useEffect(() => {
     const fetchCourseDetails = async () => {
@@ -67,7 +76,7 @@ const EnrollmentPage = () => {
               {courseData.title || "No Title"}
             </h1>
             <p className="text-red-600 text-lg">
-              {courseData.subtitle || "No description available."}
+              {courseData.Subtitle || "No description available."}
             </p>
             <div>
               <p className="text-red-900">
@@ -164,13 +173,12 @@ const EnrollmentPage = () => {
 
 
         {/* Right Section */}
-        <Link to={courseData.type === "free" ? "/enrollfree" : "/enroll"}>
-          <div className="bg-[#FAFAF0] w-1/4">
-            <button className="mt-6 text-white bg-red-600 px-10 py-4 text-xl rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 hover:bg-red-100 hover:text-red-600 animate-bounce">
-              Enroll Now
-            </button>
-          </div>
-        </Link>
+        <Link to={courseData.type === "free" ? `/enrollfree` : `/enroll/${courseId}/${courseType}`}>
+  <button className="mt-6 text-white bg-red-400 px-10 py-4 text-xl rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 hover:bg-red-100 hover:text-red-600 animate-bounce">
+    {courseData.type === "free" ? "Enroll for Free" : "Enroll Now"}
+  </button>
+</Link>
+
       </div>
 
 
@@ -182,7 +190,12 @@ const EnrollmentPage = () => {
             <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center lg:text-left">
               What You Will Learn
             </h2>
-            <p>{courseData.description}</p>
+            <ul className="list-disc text-lg pl-6 text-red-600 font-bold">
+  {courseData.description?.split(".").map((item, index) =>
+    item.trim() ? <li className="mb-2"key={index}>{item}</li> : null
+  )}
+</ul>
+
             <p className="mt-8 text-xl text-center lg:text-left font-semibold text-red-600">
               Classes Conducted Twice Weekly - 24 Lectures + Interactive Q&A
             </p>
@@ -264,16 +277,25 @@ const EnrollmentPage = () => {
       </section>
 
 
-      <Link to={courseData.type === "free" ? "/enrollfree" : "/enroll"}>
-        <div className="bg-[#FAFAF0] w-1/4 m-auto pl-[130px]">
-          <button className="mt-6 text-white bg-red-600 px-10 py-4 text-xl rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 hover:bg-red-100 hover:text-red-600 animate-bounce">
-            Enroll Now
-          </button>
-        </div>
-      </Link>
+      <Link to={courseData.type === "free" ? `/enrollfree` : `/enroll/${courseId}/${courseType}`}>
+  <button className="mt-6 text-white bg-red-400 px-10 py-4 text-xl rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 hover:bg-red-100 hover:text-red-600 animate-bounce">
+    {courseData.type === "free" ? "Enroll for Free" : "Enroll Now"}
+  </button>
+</Link>
 
     </div>
   );
 };
 
-export default EnrollmentPage;
+export default CourseDetail;
+
+
+
+
+
+
+
+
+
+
+

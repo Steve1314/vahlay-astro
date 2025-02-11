@@ -12,8 +12,10 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { useNavigate } from "react-router-dom";
+import { useNavigate ,useLocation  } from "react-router-dom";
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
+
 
 const PayPalButtonWrapper = ({ amountInUSD, formData, selectedPlan, onSuccess, onError, onCancel }) => (
   <PayPalScriptProvider
@@ -72,6 +74,11 @@ const UserEmi = () => {
 
   const navigate = useNavigate();
   const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY;
+  const location = useLocation(); // Get data from previous page
+
+  const { name, email, phone, courseId } = location.state || {}; // Get user data
+
+
 
   useEffect(() => {
     const auth = getAuth();
@@ -101,6 +108,16 @@ const UserEmi = () => {
     return () => unsubscribeAuth();
   }, []);
 
+  const handlePhoneChange = (e) => {
+    let inputPhone = e.target.value;
+    const phoneNumber = parsePhoneNumberFromString(inputPhone, selectedCountry);
+    if (phoneNumber && phoneNumber.isValid()) {
+      setFormData({ ...formData, phone: phoneNumber.number });
+    } else {
+      setFormData({ ...formData, phone: inputPhone }); // Allow partial entry
+    }
+  };
+
   useEffect(() => {
     const unsubscribeCourses = onSnapshot(collection(db, "paidCourses"), (snapshot) => {
       setCourses(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
@@ -114,6 +131,8 @@ const UserEmi = () => {
       return;
     }
 
+
+
     const unsubscribePlans = onSnapshot(
       query(collection(db, "emiPlans"), where("courseId", "==", selectedCourse)),
       (snapshot) => {
@@ -123,6 +142,35 @@ const UserEmi = () => {
 
     return () => unsubscribePlans();
   }, [selectedCourse]);
+
+  useEffect(() => {
+    if (location.state) {
+      const { name, email, phone, courseId } = location.state;
+      setFormData((prev) => ({
+        ...prev,
+        name: name || prev.name,
+        email: email || prev.email,
+        phone: phone || prev.phone,
+      }));
+      setSelectedCourse(courseId || prev.selectedCourse);
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    if (!courseId) return;
+    
+    // Fetch EMI plans for the selected course
+    const unsubscribePlans = onSnapshot(
+      query(collection(db, "emiPlans"), where("courseId", "==", courseId)),
+      (snapshot) => {
+        setEmiPlans(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      }
+    );
+
+    return () => unsubscribePlans();
+  }, [courseId]);
+
+
 
   const updateFirebaseSubscription = async () => {
     const subscriptionDate = new Date();
@@ -273,6 +321,7 @@ const UserEmi = () => {
     } catch (error) {
       setErrorMessage(error.message || "Payment failed. Please try again.");
     }
+    setIsLoading(false)
   };
 
 
@@ -327,7 +376,7 @@ const UserEmi = () => {
   return (
     <div className="m-auto my-20 min-h-screen">
       <div className="p-6 max-w-4xl mx-auto bg-white shadow rounded border border-red-200">
-        <h2 className="text-2xl font-bold mb-4 text-red-600">Apply For Emi</h2>
+        <h2 className="text-2xl font-bold mb-4 text-red-600">Verify Details</h2>
         <div className="mb-4">
           <label className="block mb-2 font-semibold text-gray-700">Name</label>
           <input
@@ -337,6 +386,7 @@ const UserEmi = () => {
             className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-red-600"
             placeholder="Enter your name"
             required
+            readOnly
           />
         </div>
         <div className="mb-4">
@@ -353,29 +403,22 @@ const UserEmi = () => {
         <div className="mb-4">
           <label className="block mb-2 font-semibold text-gray-700">Phone</label>
           <input
-            type="number"
-            value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-red-600"
-            placeholder="Enter your phone number"
-            required
-          />
+  type="text"
+  value={formData.phone}
+  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-red-600 bg-gray-100"
+  readOnly // User cannot edit
+/>
+
         </div>
         <div className="mb-4">
-          <label className="block mb-2 font-semibold text-gray-700">Select a Course</label>
+          <label className="block mb-2 font-semibold text-gray-700">Selected Course</label>
           <select
-            value={selectedCourse}
-            onChange={(e) => setSelectedCourse(e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-red-600"
-            required
-          >
-            <option value="">Select a course</option>
-            {courses.map((course) => (
-              <option key={course.id} value={course.id}>
-                {course.id}
-              </option>
-            ))}
-          </select>
+  value={selectedCourse}
+  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-red-600 bg-gray-100"
+  disabled // Disable Editing
+>
+  <option value="">{selectedCourse ? selectedCourse : "Loading..."}</option>
+</select>
         </div>
         {selectedCourse && (
           <>
@@ -397,35 +440,36 @@ const UserEmi = () => {
             </div>
           </>
         )}
-        <button
+       <button
           onClick={handleRazorpayPayment}
-          disabled={!selectedPlan || !formData.name || !formData.phone }
+          disabled={!selectedPlan || !formData.name || !formData.phone}
           className={`mt-4 w-full py-2 px-4 rounded transition-colors duration-200 ${selectedPlan && formData.name && formData.phone
             ? "bg-red-600 text-white hover:bg-red-700"
             : "bg-gray-400 text-white cursor-not-allowed"
             }`}
         >
           {isLoading ? (
-    <>
-      <svg
-        className="animate-spin h-5 w-5 mr-2 text-white"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-        <path
-          className="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8v8H4z"
-        ></path>
-      </svg>
-      Processing...
-    </>
-  ) : (
-    "Pay with Razorpay"
-  )}
-</button>
+            <div className="flex items-center justify-center">
+              <svg
+                className="animate-spin h-5 w-5  text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle className="opacity-25 " cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path
+                  className="opacity-75 "
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v8H4z"
+                ></path>
+              </svg>
+              <p className=" mx-2">Processing...</p>
+            </div>
+          ) : (
+            "Pay with Razorpay"
+          )}
+        </button>
+
         <div className="mt-4">
           <button
             onClick={async () => {
@@ -543,14 +587,33 @@ const UserEmi = () => {
           </button>
 
           {/* Placeholder for dynamically rendered PayPal button */}
-          <div id="paypal-button-container" className="mt-4"></div>
+          <div className="flex items-center justify-center w-full h-auto">
+            <div id="paypal-button-container" className="mt-4 flex items-center justify-center  ">  </div>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
+
 export default UserEmi;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

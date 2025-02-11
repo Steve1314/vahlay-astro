@@ -82,7 +82,7 @@ const Login = () => {
         navigate("/admin"); // Redirect admin to admin portal
       } else {
         alert("Login successful!");
-        navigate("/Home"); // Redirect normal users
+        navigate("/courses"); // Redirect normal users
       }
     } catch (err) {
       setError("Failed to log in. Please check your credentials.");
