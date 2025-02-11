@@ -88,6 +88,8 @@ import AdminInquiries from './components/pages/AdminInquiry';
 import ScrollToTop from "./components/pages/ScrollTop";
 import AdminContact from './components/pages/AdminContact';
 import QuestionAndAns from './components/pages/QuestionAndAns';
+import AdminVedioOrder from "./components/pages/AdminVedioOrder"
+
  
  
  
@@ -236,6 +238,14 @@ const App = () => {
                 <AdminLiveSession />
               </ProtectedRoutes>
             } />
+
+
+<Route path="/admin/vedio-order" element={
+              <ProtectedRoutes adminOnly={true} >
+                <AdminVedioOrder />
+              </ProtectedRoutes>
+            } />
+
             <Route path="/studentlivesession" element={<ProtectedRoutes><StudentLiveSession /> </ProtectedRoutes>} />
             <Route path="/JitsiIframe" element={<ProtectedRoutes><JitsiIframe /> </ProtectedRoutes>} />
  

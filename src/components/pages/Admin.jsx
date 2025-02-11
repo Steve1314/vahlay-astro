@@ -40,7 +40,9 @@ const SideBar = () => {
     { name: "Course Inquiry", path: "/admin/admininquiry" },            
     { name: "ContactUs Inquiry", path: "/admin/admincontact" },
     { name: "Question & Ans", path: "/admin/question-ans" },
-    {name:"Course Order",path:"/admin/admincourseorder"}
+    {name:"Course Order",path:"/admin/admincourseorder"},
+    {name:"Vedio Order",path:"/admin/vedio-order"},
+
 
    
 

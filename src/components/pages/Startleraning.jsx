@@ -1,3 +1,7 @@
+
+
+
+
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { collection, getDocs, doc, getDoc, updateDoc, onSnapshot } from "firebase/firestore";
@@ -32,6 +36,12 @@ const PersonalCourse = () => {
   const [user, setUser] = useState(null);
   const [courseType, setCourseType] = useState(null);
   const [groupedVideos, setGroupedVideos] = useState({});
+
+
+  const [selectedTitle, setSelectedTitle] = useState("");
+  const [titles, setTitles] = useState([]);
+
+
  const [formData, setFormData] = useState({
      profilePic: "",
     
@@ -46,40 +56,50 @@ const PersonalCourse = () => {
       setVideos([]);
       setStudyMaterials([]);
       setLoading(true);
-
+    
       try {
         const courseDoc = doc(db, "freeCourses", courseName);
         const courseSnapshot = await getDoc(courseDoc);
-
+    
         if (courseSnapshot.exists()) {
-          // Assume the free course doc has a "type" field which will be "free"
           setCourseType(courseSnapshot.data().type);
         }
-
-        // Fetch Videos
+    
+        // Fetch Videos with proper ordering
         const videosRef = collection(db, `videos_${courseName}`);
         const videosSnapshot = await getDocs(videosRef);
-        const fetchedVideos = videosSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        
+        // 1. Sort videos by order field first
+        const fetchedVideos = videosSnapshot.docs
+          .map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }))
+          .sort((a, b) => a.order - b.order);
+    
         setVideos(fetchedVideos);
-
-        // ✅ Correct total videos count
-        let totalVideoCount = fetchedVideos.length;
-        setTotalVideos(totalVideoCount);
-
-        // ✅ Group videos dynamically
+        setTotalVideos(fetchedVideos.length);
+    
+        // 2. Group videos while maintaining order
         const grouped = {};
         fetchedVideos.forEach((video) => {
-          const normalizedTitle = video.title.trim().toLowerCase();
-          if (!grouped[normalizedTitle]) {
-            grouped[normalizedTitle] = [];
+          const title = video.title.trim(); // Keep original casing for display
+          if (!grouped[title]) {
+            grouped[title] = [];
           }
-          grouped[normalizedTitle].push(video);
+          grouped[title].push(video);
         });
-        setGroupedVideos(grouped);
-
+    
+        // 3. Sort groups alphabetically (optional)
+        const sortedGroups = Object.keys(grouped)
+          .sort()
+          .reduce((acc, key) => {
+            acc[key] = grouped[key];
+            return acc;
+          }, {});
+    
+        setGroupedVideos(sortedGroups);
+    
         // Fetch Study Materials
         const materialsRef = collection(db, `materials_${courseName}`);
         const materialsSnapshot = await getDocs(materialsRef);
