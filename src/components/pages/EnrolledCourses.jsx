@@ -324,7 +324,7 @@ const EnrollCourse = () => {
                 </tbody>
               </table>
             
-              <ActiveLink/>
+      
             </div>
           </>
         )}

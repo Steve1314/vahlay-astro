@@ -120,19 +120,22 @@ const QandASection = ({ courseName }) => {
                   >
             {videos.map((video, index) => (
               <SwiperSlide key={index}>
-                <div className="mb-10">
-                  <video
-                    src={video.videoUrl}
-                    controls
-                    className="w-full max-h-96 bg-black rounded-lg shadow"
-                  />
-                  <div className="mt-4">
-                    <h3 className="text-2xl font-semibold text-gray-800">
-                      {video.title}
-                    </h3>
-                    <p className="text-lg text-gray-600">{video.subTitle}</p>
-                  </div>
-                </div>
+              <div className="mb-10 px-4 md:px-0">
+  <div className="w-full md:w-3/4 lg:w-2/3">
+    <video
+      src={video.videoUrl}
+      controls
+      className="w-full h-auto max-h-[200px] bg-black rounded-lg shadow"
+    />
+    <div className="mt-4">
+      <h3 className="text-xl md:text-2xl font-semibold text-gray-800">
+        {video.title}
+      </h3>
+      <p className="text-base md:text-lg text-gray-600">{video.subTitle}</p>
+    </div>
+  </div>
+</div>
+
               </SwiperSlide>
             ))}
           </Swiper>
@@ -150,18 +153,6 @@ const QandASection = ({ courseName }) => {
 
       
 
-      {/* WhatsApp Chat Button */}
-      <div className="mt-10 flex justify-center">
-        <a
-          href="https://wa.me/918849092183?text=Hello,%20I%20have%20a%20question%20about%20the%20course"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center space-x-2 bg-green-500 text-white px-6 py-3 rounded-full shadow hover:bg-green-600 transition"
-        >
-          <FaWhatsapp size={24} />
-          <span>Chat on WhatsApp</span>
-        </a>
-      </div>
     </div>
   );
 };

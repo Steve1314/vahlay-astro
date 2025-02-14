@@ -16,5 +16,26 @@
     <script src="https://www.paypal.com/sdk/js?client-id=AQiM7cHIWwgSyw0DyJK0y3mw3azikbiPj0PvQJfKZzLG2nBgUgxcfi0U_BhLJ7-_UPrF-olrhn37ekVj&currency=USD"></script>
 
 
+    <div id="root"></div>
+
+    <!-- Google Translate Element -->
+    <div id="google_translate_element"></div>
+
+    <!-- Load Google Translate Script -->
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement(
+                {
+                    pageLanguage: "en",
+                    includedLanguages: "fr,de,es,zh,hi,ar,ja,ru,pt,ko", // Add desired languages
+                    layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+                    autoDisplay: false
+                },
+                "google_translate_element"
+            );
+        }
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
   </body>
 </html>

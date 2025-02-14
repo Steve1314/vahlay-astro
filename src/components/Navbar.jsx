@@ -4,6 +4,7 @@ import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import { db, app } from "../firebaseConfig";
 import { collection, getDocs } from "firebase/firestore";
 import Notification from "./Emi/Notification";
+import LanguageSelector from "./LanguageSelector"
 
 const auth = getAuth(app);
 
@@ -206,6 +207,10 @@ const Navbar = () => {
             </div>
           )}
           <Notification />
+            <LanguageSelector/>
+
+       
+
         </div>
       </div>
     </header>

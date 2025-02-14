@@ -106,3 +106,26 @@ body {
     animation: oscillate 10s ease-in-out infinite;
   }
 }
+
+/* Make sure the Google Translate dropdown appears */
+.goog-te-gadget-simple {
+  @apply bg-white text-black px-4 py-2 rounded-md shadow-md border border-gray-300 cursor-pointer hover:bg-gray-100;
+}
+
+/* Hide Google Branding */
+.goog-logo-link,
+.goog-te-gadget span,
+.goog-te-gadget-simple span,
+.goog-te-banner-frame {
+  @apply hidden;
+}
+
+/* Fix dropdown visibility */
+.goog-te-gadget select {
+  @apply bg-transparent border-none text-black cursor-pointer;
+}
+
+/* Hide unwanted Google icons */
+.goog-te-gadget img {
+  @apply hidden;
+}

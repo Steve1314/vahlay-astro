@@ -8,6 +8,8 @@ const App = () => {
     const [meetingLink, setMeetingLink] = useState(null);
     const [meetings, setMeetings] = useState([]);
     const containerRef = useRef(null);
+    const [waitingApproval, setWaitingApproval] = useState(false); // 🔹 NEW STATE
+
 
     useEffect(() => {
         gsap.fromTo(containerRef.current, { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.8 });
@@ -41,6 +43,8 @@ const App = () => {
             const data = await response.json();
             const meetingURL = data.meetingLink;
             setMeetingLink(meetingURL);
+            setWaitingApproval(true); // 🔹 Show waiting message
+
             
             // Store meeting in Firestore with timestamp
             const docRef = await addDoc(collection(db, "meetings"), {
@@ -101,6 +105,11 @@ const App = () => {
                         <p className="text-lg">
                             🔗 <a href={meetingLink} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">{meetingLink}</a>
                         </p>
+
+                        {waitingApproval && (
+                            <p className="text-yellow-400 mt-2">⚠ Waiting for Admin Approval...</p> // 🔹 NEW MESSAGE
+                        )}
+
                     </div>
                 )}
 

@@ -1,10 +1,7 @@
 
-
-
-
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { collection, getDocs, doc, getDoc, updateDoc, onSnapshot } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, updateDoc, onSnapshot, query, orderBy, limit } from "firebase/firestore";
 import { PieChart } from "react-minimal-pie-chart";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { db } from "../../firebaseConfig";
@@ -42,11 +39,11 @@ const PersonalCourse = () => {
   const [titles, setTitles] = useState([]);
 
 
- const [formData, setFormData] = useState({
-     profilePic: "",
-    
-     email: "NA",
-   });
+  const [formData, setFormData] = useState({
+    profilePic: "",
+
+    email: "NA",
+  });
 
   const auth = getAuth();
 
@@ -56,50 +53,56 @@ const PersonalCourse = () => {
       setVideos([]);
       setStudyMaterials([]);
       setLoading(true);
-    
+  
       try {
         const courseDoc = doc(db, "freeCourses", courseName);
         const courseSnapshot = await getDoc(courseDoc);
-    
+  
         if (courseSnapshot.exists()) {
           setCourseType(courseSnapshot.data().type);
         }
-    
-        // Fetch Videos with proper ordering
+  
+        // Fetch Videos from Firestore
         const videosRef = collection(db, `videos_${courseName}`);
         const videosSnapshot = await getDocs(videosRef);
-        
-        // 1. Sort videos by order field first
-        const fetchedVideos = videosSnapshot.docs
-          .map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }))
-          .sort((a, b) => a.order - b.order);
-    
+  
+        // 1. Fetch and store videos with title & order
+        const fetchedVideos = videosSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+  
         setVideos(fetchedVideos);
         setTotalVideos(fetchedVideos.length);
-    
-        // 2. Group videos while maintaining order
+  
+        // 2. Group videos by title and track title-order values
         const grouped = {};
+        const titleOrders = {}; // Store `title-order` for sorting sections
+  
         fetchedVideos.forEach((video) => {
-          const title = video.title.trim(); // Keep original casing for display
+          const title = video.title.trim();
+          const titleOrder = video["title-order"] || 999; // Default large number if missing
+          const videoOrder = video.order || 999; // Default large number if missing
+  
           if (!grouped[title]) {
             grouped[title] = [];
+            titleOrders[title] = titleOrder; // Store the order of the title
           }
-          grouped[title].push(video);
+  
+          grouped[title].push({ ...video, videoOrder }); // Store videos inside titles
         });
-    
-        // 3. Sort groups alphabetically (optional)
+  
+        // 3. Sort titles based on `title-order`
         const sortedGroups = Object.keys(grouped)
-          .sort()
+          .sort((a, b) => titleOrders[a] - titleOrders[b]) // Sorting by title-order
           .reduce((acc, key) => {
-            acc[key] = grouped[key];
+            // 4. Sort videos within each title by `order` field
+            acc[key] = grouped[key].sort((a, b) => a.videoOrder - b.videoOrder);
             return acc;
           }, {});
-    
+  
         setGroupedVideos(sortedGroups);
-    
+  
         // Fetch Study Materials
         const materialsRef = collection(db, `materials_${courseName}`);
         const materialsSnapshot = await getDocs(materialsRef);
@@ -108,67 +111,65 @@ const PersonalCourse = () => {
           ...doc.data(),
         }));
         setStudyMaterials(fetchedMaterials);
-
+  
         if (userEmail) {
           const userSubscriptionRef = doc(db, "subscriptions", userEmail);
           const subscriptionSnapshot = await getDoc(userSubscriptionRef);
-
+  
           if (subscriptionSnapshot.exists()) {
             const subscriptionData = subscriptionSnapshot.data();
-
+  
             if (courseType === "free") {
-              // For free courses, check the "freecourses" field (an array of course names)
               if (
                 subscriptionData.freecourses &&
                 subscriptionData.freecourses.includes(courseName)
               ) {
-                // Free courses do not track progress in the same way.
-                setWatchedVideos([]); // No watched videos tracking for free courses.
+                setWatchedVideos([]);
               }
             } else {
-              // For paid courses
               const courseDetails = subscriptionData.DETAILS.find(
                 (detail) => Object.keys(detail)[0] === courseName
               );
-
+  
               if (courseDetails) {
                 const courseInfo = courseDetails[courseName];
                 const isFreeCourse = courseInfo.isFree;
-
+  
                 if (isFreeCourse) {
                   setValidityPercentage(null);
                 } else {
                   let daysLeft = 0;
                   let usedDays = 0;
                   let totalDays = 0;
-
+  
                   if (courseInfo.subscriptionDate && courseInfo.expiryDate) {
                     const subDate = new Date(courseInfo.subscriptionDate);
                     const expDate = new Date(courseInfo.expiryDate);
                     const now = new Date();
-
+  
                     const totalTime = expDate.getTime() - subDate.getTime();
                     totalDays = Math.floor(totalTime / (1000 * 3600 * 24));
-
+  
                     const usedTime = now.getTime() - subDate.getTime();
                     usedDays =
                       usedTime > 0
                         ? Math.floor(usedTime / (1000 * 3600 * 24))
                         : 0;
-
+  
                     const rawDaysLeft = totalDays - usedDays;
                     daysLeft = rawDaysLeft < 0 ? 0 : rawDaysLeft;
                   }
-
+  
                   if (totalDays > 0) {
-                    const validityPercent = Math.floor((daysLeft / totalDays) * 100);
+                    const validityPercent = Math.floor(
+                      (daysLeft / totalDays) * 100
+                    );
                     setValidityPercentage(validityPercent.toString());
                   } else {
                     setValidityPercentage("0");
                   }
                 }
-
-                // ✅ Fetch watched videos count correctly for paid courses
+  
                 setWatchedVideos(courseInfo.watchedVideos || []);
               }
             }
@@ -180,9 +181,10 @@ const PersonalCourse = () => {
         setLoading(false);
       }
     };
-
+  
     fetchCourseData();
   }, [courseName, userEmail, courseType]);
+  
 
   const SubscriptionValidity = () => {
     if (courseType === "free") {
@@ -345,26 +347,27 @@ const PersonalCourse = () => {
     return () => unsubscribe();
   }, [auth]);
 
-  // Fetch meeting URL
+  // Fetch the latest meeting URL
   useEffect(() => {
-    const fetchMeetingDetails = async () => {
+    const fetchLatestMeeting = async () => {
       try {
-        const courseDoc = doc(db, "courseMeetings", courseName);
-        const courseSnapshot = await getDoc(courseDoc);
+        const meetingsRef = collection(db, "meetings"); // UPDATED HERE
+        const q = query(meetingsRef, orderBy("createdAt", "desc"), limit(1)); // UPDATED HERE
+        const querySnapshot = await getDocs(q); // UPDATED HERE
 
-        if (courseSnapshot.exists()) {
-          const data = courseSnapshot.data();
-          setMeetingUrl(data.meetingUrl?.trim());
+        if (!querySnapshot.empty) {
+          const latestMeeting = querySnapshot.docs[0].data();
+          setMeetingUrl(latestMeeting.link?.trim()); // UPDATED HERE
         } else {
-          console.error(`No document found for course: ${courseName}`);
+          console.error("No recent meetings found");
         }
       } catch (error) {
-        console.error("Error fetching meeting details:", error);
+        console.error("Error fetching latest meeting details:", error);
       }
     };
 
-    fetchMeetingDetails();
-  }, [courseName]);
+    fetchLatestMeeting();
+  }, []);
 
   const handleRedirect = () => {
     if (meetingUrl) {
@@ -420,7 +423,7 @@ const PersonalCourse = () => {
 
         {/* Profile Info */}
         <div className="p-6 flex flex-col items-center">
-        <img
+          <img
             src={formData.profilePic || "https://via.placeholder.com/100"}
             alt="Profile"
             className="rounded-full mb-4 w-20 h-20 border-2 border-white"
@@ -497,23 +500,23 @@ const PersonalCourse = () => {
               <h3 className="text-lg font-semibold text-center text-red-600 mb-2">
                 Course Progress
               </h3>
-             <div>
-             <PieChart
-                data={[
-                  { title: "Watched", value: watchedPercentage, color: "#FF5252" }, // Green for watched
-                  { title: "Remaining", value: 100 - watchedPercentage, color: "#fcfafa" }, // Red for remaining
-                ]}
-                lineWidth={20}
-                rounded
-                animate
-                label={({ dataEntry }) => `${Math.round(dataEntry.percentage)}%`} // Show percentage
-                labelStyle={{
-                  fontSize: "6px",
-                  fill: "#000",
-                }}
-                labelPosition={75}
-              />
-             </div>
+              <div>
+                <PieChart
+                  data={[
+                    { title: "Watched", value: watchedPercentage, color: "#FF5252" }, // Green for watched
+                    { title: "Remaining", value: 100 - watchedPercentage, color: "#fcfafa" }, // Red for remaining
+                  ]}
+                  lineWidth={20}
+                  rounded
+                  animate
+                  label={({ dataEntry }) => `${Math.round(dataEntry.percentage)}%`} // Show percentage
+                  labelStyle={{
+                    fontSize: "6px",
+                    fill: "#000",
+                  }}
+                  labelPosition={75}
+                />
+              </div>
               <p className="text-center mt-2 text-red-700">
                 {watchedVideos.length}/{totalVideos} Videos Watched ({watchedPercentage}%)
               </p>
@@ -536,21 +539,21 @@ const PersonalCourse = () => {
                 Modules Covered
               </h3>
               <div>
-              <PieChart
-                data={[
-                  { title: "Watched", value: modulesCovered, color: "#FF5252" },
-                  { title: "Remaining", value: totalModules - modulesCovered, color: "#fcfafa" },
-                ]}
-                lineWidth={20}
-                rounded
-                animate
-                label={({ dataEntry }) => `${Math.round(dataEntry.percentage)}%`}
-                labelStyle={{
-                  fontSize: "6px",
-                  fill: "#000",
-                }}
-                labelPosition={75}
-              />
+                <PieChart
+                  data={[
+                    { title: "Watched", value: modulesCovered, color: "#FF5252" },
+                    { title: "Remaining", value: totalModules - modulesCovered, color: "#fcfafa" },
+                  ]}
+                  lineWidth={20}
+                  rounded
+                  animate
+                  label={({ dataEntry }) => `${Math.round(dataEntry.percentage)}%`}
+                  labelStyle={{
+                    fontSize: "6px",
+                    fill: "#000",
+                  }}
+                  labelPosition={75}
+                />
               </div>
               <p className="text-center mt-2 text-red-700">
                 {modulesCovered}/{totalModules} Modules Covered ({modulesCoveredPercentage}%)
@@ -582,70 +585,70 @@ const PersonalCourse = () => {
 
         {/* Videos Section */}
         <div className="px-6 mt-8">
-      <h2 className="text-xl font-bold text-red-600 mb-4">Course Videos</h2>
-      {Object.keys(groupedVideos).map((title, index) => (
-        <div key={index} className="mb-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-2">{title}</h3>
+          <h2 className="text-xl font-bold text-red-600 mb-4">Course Videos</h2>
+          {Object.keys(groupedVideos).map((title, index) => (
+            <div key={index} className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">{title}</h3>
 
-          {/* Swiper Container */}
-          <div className="relative">
-            {/* Left Navigation Button */}
-            <div className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10">
-              <button >
-                <FaChevronLeft className="swiper-button-prev   text-red-600 bg-white rounded-full"  />
-              </button>
+              {/* Swiper Container */}
+              <div className="relative">
+                {/* Left Navigation Button */}
+                <div className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10">
+                  <button >
+                    <FaChevronLeft className="swiper-button-prev   text-red-600 bg-white rounded-full" />
+                  </button>
+                </div>
+
+                <Swiper
+                  modules={[Navigation, Pagination]}
+                  navigation={{
+                    nextEl: ".swiper-button-next",
+                    prevEl: ".swiper-button-prev",
+                  }}
+                  pagination={{ clickable: true }}
+                  spaceBetween={10}
+                  slidesPerView={1} // Default for mobile
+                  breakpoints={{
+                    640: { slidesPerView: 2 }, // Medium screen (2 videos)
+                    1024: { slidesPerView: 5 }, // Large screen (5 videos)
+                  }}
+                  className="max-w-7xl "
+                >
+                  {groupedVideos[title].map((video) => (
+                    <SwiperSlide key={video.id}>
+                      <div className="bg-white  shadow-md rounded-lg overflow-hidden transition-transform transform hover:scale-105">
+                        <Link to={`/course/${courseName}/video/${video.id}`}>
+                          <video
+                            src={video.url}
+                            controls
+                            className="w-full h-40 bg-black rounded"
+                            controlsList="nodownload"
+                            onEnded={() => handleMarkAsWatched(video.id)}
+                          />
+
+                          <div className="p-3">
+
+                            <Link to={`/course/${courseName}/video/${video.id}`}><p className="text-red-700 font-semibold text-sm truncate mb-6">{video.description}</p></Link>
+                          </div>
+                        </Link>
+                      </div>
+                    </SwiperSlide>
+                  ))}
+                </Swiper>
+
+                {/* Right Navigation Button */}
+                <div className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10">
+                  <button >
+                    <FaChevronRight className=" swiper-button-next text-red-600 bg-white rounded-full    " />
+                  </button>
+                </div>
+              </div>
             </div>
-
-            <Swiper
-              modules={[Navigation, Pagination]}
-              navigation={{
-                nextEl: ".swiper-button-next",
-                prevEl: ".swiper-button-prev",
-              }}
-              pagination={{ clickable: true }}
-              spaceBetween={10}
-              slidesPerView={1} // Default for mobile
-              breakpoints={{
-                640: { slidesPerView: 2 }, // Medium screen (2 videos)
-                1024: { slidesPerView: 5 }, // Large screen (5 videos)
-              }}
-              className="max-w-7xl "
-            >
-              {groupedVideos[title].map((video) => (
-                <SwiperSlide key={video.id}>
-                  <div className="bg-white  shadow-md rounded-lg overflow-hidden transition-transform transform hover:scale-105">
-                    <Link to={`/course/${courseName}/video/${video.id}`}>
-                    <video
-                      src={video.url}
-                      controls
-                      className="w-full h-40 bg-black rounded"
-                      controlsList="nodownload"
-                      onEnded={() => handleMarkAsWatched(video.id)}
-                    />
-                   
-                    <div className="p-3">
-                      
-                    <Link to={`/course/${courseName}/video/${video.id}`}><p className="text-red-700 font-semibold text-sm truncate mb-6">{video.description}</p></Link>
-                    </div>
-                    </Link>
-                  </div>
-                </SwiperSlide>
-              ))}
-            </Swiper>
-
-            {/* Right Navigation Button */}
-            <div className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10">
-              <button >
-                <FaChevronRight  className=" swiper-button-next text-red-600 bg-white rounded-full    " />
-              </button>
-            </div>
-          </div>
+          ))}
         </div>
-      ))}
-    </div>
 
-  {/* ***** New Q&A Section ***** */}
-  <QandASection courseName={courseName} />
+        {/* ***** New Q&A Section ***** */}
+        <QandASection courseName={courseName} />
 
 
       </main>

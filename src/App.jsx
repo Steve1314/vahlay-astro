@@ -90,7 +90,8 @@ import AdminContact from './components/pages/AdminContact';
 import QuestionAndAns from './components/pages/QuestionAndAns';
 import AdminVedioOrder from "./components/pages/AdminVedioOrder"
 
- 
+import LanguageSelector from './components/LanguageSelector';
+import AdminTitleArrange from "./components/pages/AdminTitleArrange"
  
  
  
@@ -223,6 +224,13 @@ const App = () => {
               </ProtectedRoutes>
             } />
 
+            
+<Route path="/admin/title-order" element={
+              <ProtectedRoutes adminOnly={true} >
+                <AdminTitleArrange />
+              </ProtectedRoutes>
+            } />
+
             <Route path="/studentlivesession" element={<ProtectedRoutes><StudentLiveSession /> </ProtectedRoutes>} />
             <Route path="/JitsiIframe" element={<ProtectedRoutes><JitsiIframe /> </ProtectedRoutes>} />
  
@@ -348,3 +356,4 @@ const App = () => {
 export default App;
 
  
+
