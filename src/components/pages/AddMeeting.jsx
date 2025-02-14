@@ -19,7 +19,7 @@ const App = () => {
     // Authenticate with Backend
     const authenticate = async () => {
         try {
-            const response = await fetch("http://localhost:5000/meeting/authenticate");
+            const response = await fetch("https://backend-7e8f.onrender.com/meeting/authenticate");
             const data = await response.json();
             alert(data.message);
         } catch (error) {
@@ -31,7 +31,7 @@ const App = () => {
     // Create a new meeting
     const createMeeting = async () => {
         try {
-            const response = await fetch("http://localhost:5000/meeting/create", {
+            const response = await fetch("https://backend-7e8f.onrender.com/meeting/create", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" }
             });
