@@ -2,7 +2,7 @@
 import React from 'react';
 import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
- 
+
 // Page Components
 import Home from './components/pages/Home';
 import About from './components/pages/About';
@@ -41,42 +41,42 @@ import JitsiIframe from './components/pages/LiveSession/JitsiIframe';
 import AddMeeting from "./components/pages/AddMeeting";
 import VedioDetail from "./components/pages/VedioDetail";
 import PaymentGuide from './components/pages/PaymentGuide';
- 
+
 import AdminCourseOrder from './components/pages/AdminCourseOrder';
- 
- 
+
+
 import ProtectedRoutes from "./components/pages/ProtectedRoutes"
 import AdminCalendar from './components/pages/AdminCalendar';
 import AdminArticle from './components/pages/AdminArticle';
 import Unauthorized from './components/pages/Unauthorized';
 import AdminQuestion from './components/pages/AdminQuestion';
 import SecurityGuard from './components/pages/SecurityGuard';
- 
- 
- 
- 
- 
+
+
+
+
+
 // Emi
- 
+
 import Notifications from './components/Emi/Notification';
 import AddEmi from "./components/Emi/AddEmi"
 import Finalize from "./components/Emi/Finalize";
 import EmiUserList from "./components/Emi/EmiUserList";
 import EMIDetails from './components/Emi/EmiDetails';
 import PayEmi from "./components/Emi/PayEmi"
- 
- 
- 
+
+
+
 // Article Components
 import ArticlePage1 from './components/pages/Articles/Article1';
 import Payment from "./components/pages/Payment"
- 
- 
- 
+
+
+
 // Layout Components
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
- 
+
 // CSS Imports
 import 'swiper/css';
 import 'swiper/css/navigation';
@@ -84,7 +84,7 @@ import 'swiper/css/pagination';
 import AdminArticles from './components/pages/AdminArticle';
 import AdminSubscribeCourseList from "./components/pages/AdminSubscribeCourseList"
 import AdminInquiries from './components/pages/AdminInquiry';
- 
+
 import ScrollToTop from "./components/pages/ScrollTop";
 import AdminContact from './components/pages/AdminContact';
 import QuestionAndAns from './components/pages/QuestionAndAns';
@@ -92,12 +92,12 @@ import AdminVedioOrder from "./components/pages/AdminVedioOrder"
 
 import LanguageSelector from './components/LanguageSelector';
 import AdminTitleArrange from "./components/pages/AdminTitleArrange"
- 
- 
- 
+
+
+
 const App = () => {
- 
- 
+
+
   return (
     <Router>
       {/* <SecurityGuard /> */}
@@ -120,47 +120,47 @@ const App = () => {
             <Route path="/contact-us" element={<ContactUs />} />
             <Route path="/copartners" element={<Copartners />} />
             <Route path="/paymentguide" element={<PaymentGuide />} />
- 
- 
+
+
             {/* Course Routes */}
             <Route path="/courses" element={<Courses />} />
- 
- 
+
+
             {/* <Route path="/coursedetail/:id" element={<CourseDetail />} /> */}
             <Route path="/coursedetail/:courseId/:courseType" element={<ProtectedRoutes><CourseDetail /></ProtectedRoutes>} />
- 
- 
- 
+
+
+
             {/* <Route path="/enroll" element={<Enroll />} /> */}
             <Route path="/paidcourse1" element={<ProtectedRoutes><Paidcourse1 /></ProtectedRoutes>} />
             <Route path="/bhagavadgita" element={<ProtectedRoutes><BhagavadGita /></ProtectedRoutes>} />
             <Route path="/narad" element={<ProtectedRoutes><Narad /></ProtectedRoutes>} />
             {/* <Route path="/enrollfree" element={<EnrollFree />} /> */}
- 
+
             {/* Services and Blogs */}
             <Route path="/services" element={<Services />} />
             <Route path="/consulting" element={<Consulting />} />
             <Route path="/articles" element={<Blogs />} />
- 
+
             {/* Calendar Routes */}
             <Route path="/calendar" element={<ProtectedRoutes><Calendar /></ProtectedRoutes>} />
             <Route path="/calendar2" element={<ProtectedRoutes><Calendar2 /></ProtectedRoutes>} />
- 
+
             {/* Article Routes */}
             <Route path="/article/:id" element={<ArticlePage1 />} />
- 
+
             {/* Admin and Dashboard */}
             {/* <Route path="/admin" element={<Admin />} /> */}
- 
+
             <Route path="/admin/admincourseorder" element={<ProtectedRoutes adminOnly={true}>  <AdminCourseOrder /></ProtectedRoutes>} />
- 
+
             <Route path="/admin/addcourse" element={
               <ProtectedRoutes adminOnly={true} >
                 <AddCourse />
               </ProtectedRoutes>
             } />
             <Route path="/dashboard" element={
- 
+
               <ProtectedRoutes> <Dashboard /> </ProtectedRoutes>} />
             <Route path="/profile" element={<ProtectedRoutes>
               <Profile />
@@ -173,13 +173,13 @@ const App = () => {
                 <AddMeeting />
               </ProtectedRoutes>
             } />
- 
+
             <Route path="/admin/question-ans" element={
               <ProtectedRoutes adminOnly={true} >
                 <AdminQuestion />
               </ProtectedRoutes>
             } />
- 
+
             <Route
               path="/admin/question-answer"
               element={
@@ -188,7 +188,7 @@ const App = () => {
                 </ProtectedRoutes>
               }
             />
- 
+
             <Route
               path="/course/:courseName/video/:videoId"
               element={
@@ -197,8 +197,8 @@ const App = () => {
                 </ProtectedRoutes>
               }
             />
- 
- 
+
+
             {/* <Route path="/meet" element={<Meet />} /> */}
             <Route path="/course/:courseName" element={<ProtectedRoutes><Startleraning /> </ProtectedRoutes>}></Route>
             <Route path="/admin/upload" element={
@@ -218,14 +218,14 @@ const App = () => {
             } />
 
 
-<Route path="/admin/vedio-order" element={
+            <Route path="/admin/vedio-order" element={
               <ProtectedRoutes adminOnly={true} >
                 <AdminVedioOrder />
               </ProtectedRoutes>
             } />
 
-            
-<Route path="/admin/title-order" element={
+
+            <Route path="/admin/title-order" element={
               <ProtectedRoutes adminOnly={true} >
                 <AdminTitleArrange />
               </ProtectedRoutes>
@@ -233,8 +233,8 @@ const App = () => {
 
             <Route path="/studentlivesession" element={<ProtectedRoutes><StudentLiveSession /> </ProtectedRoutes>} />
             <Route path="/JitsiIframe" element={<ProtectedRoutes><JitsiIframe /> </ProtectedRoutes>} />
- 
- 
+
+
             <Route
               path="/enroll/:courseId/:courseType"
               element={
@@ -243,7 +243,7 @@ const App = () => {
                 </ProtectedRoutes>
               }
             />
- 
+
             <Route
               path="/enrollfree"
               element={
@@ -252,7 +252,7 @@ const App = () => {
                 </ProtectedRoutes>
               }
             />
- 
+
             <Route
               path="/admin"
               element={
@@ -261,7 +261,7 @@ const App = () => {
                 </ProtectedRoutes>
               }
             />
- 
+
             <Route
               path="/admin/payment"
               element={
@@ -324,9 +324,9 @@ const App = () => {
             <Route path="/payemi" element={<ProtectedRoutes> <PayEmi /> </ProtectedRoutes>} />
             <Route path="/finalize" element={<ProtectedRoutes> <Finalize />  </ProtectedRoutes>} />
             <Route path="/notifications" element={<Notifications />} />
- 
+
             <Route path="/unauthorized" element={<Unauthorized />} />
- 
+
           </Routes>
         </main>
         <Footer />
@@ -352,8 +352,8 @@ const App = () => {
     </Router>
   );
 };
- 
+
 export default App;
 
- 
+
 

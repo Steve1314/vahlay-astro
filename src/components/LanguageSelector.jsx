@@ -33,7 +33,7 @@ const GoogleTranslate = () => {
         <div className="text-center">
             <button
                 onClick={() => setShowTranslate(!showTranslate)}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-700 transition"
+                className="px-4 py-2 bg-red-700 text-white rounded-lg hover:bg-blue-700 transition"
             >
                 {showTranslate ? "Hide Translator" : "Translate Website"}
             </button>

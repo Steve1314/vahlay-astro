@@ -161,6 +161,8 @@ const Navbar = () => {
                   Admin
                 </Link>
               )}
+ <Notification />
+ <LanguageSelector/>
             </div>
           </div>
         </nav>
