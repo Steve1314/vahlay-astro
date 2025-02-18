@@ -83,10 +83,10 @@ const AdminVideoManager = () => {
 
     // Create copy of videos
     const updatedVideos = { ...videos };
-    
+
     // Remove from source
     updatedVideos[sourceTitle] = updatedVideos[sourceTitle].filter((_, i) => i !== source.index);
-    
+
     // Add to destination
     updatedVideos[destTitle] = [
       ...(updatedVideos[destTitle] || []).slice(0, destination.index),
@@ -99,14 +99,14 @@ const AdminVideoManager = () => {
 
     // Track changes for saving later
     const changes = [];
-    
+
     // Update orders for source title
     updatedVideos[sourceTitle].forEach((video, index) => {
-      changes.push({ 
-        id: video.id, 
-        updates: { 
-          order: index,
-          ...(sourceTitle !== video.title && { title: video.title }) 
+      changes.push({
+        id: video.id,
+        updates: {
+          order: index + 1,
+          ...(sourceTitle !== video.title && { title: video.title })
         }
       });
     });
@@ -116,7 +116,7 @@ const AdminVideoManager = () => {
       changes.push({
         id: video.id,
         updates: {
-          order: index,
+          order: index + 1,
           title: destTitle
         }
       });
@@ -133,7 +133,7 @@ const AdminVideoManager = () => {
     if (!pendingChanges.length) return;
 
     try {
-      const batchUpdates = pendingChanges.map(({ id, updates }) => 
+      const batchUpdates = pendingChanges.map(({ id, updates }) =>
         updateDoc(doc(db, `videos_${selectedCourse}`, id), updates)
       );
 
@@ -151,10 +151,10 @@ const AdminVideoManager = () => {
     try {
       // For immediate delete:
       await deleteDoc(doc(db, `videos_${selectedCourse}`, videoId));
-      
+
       // For batched delete (add to pending changes):
       // setPendingChanges(prev => [...prev, { id: videoId, delete: true }]);
-      
+
       setVideos(prev => ({
         ...prev,
         [title]: prev[title].filter(v => v.id !== videoId)
@@ -168,93 +168,93 @@ const AdminVideoManager = () => {
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-100">
       {/* Sidebar */}
-      <div className=" bg-white shadow-md">
+      <div className="bg-white shadow-md p-4 w-full md:w-64">
         <Admin />
       </div>
 
+      {/* Main Content */}
+      <div className="flex-1 p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-gray-800">Course Video Management</h1>
+          {pendingChanges.length > 0 && (
+            <button
+              onClick={handleSaveChanges}
+              className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg shadow-md transition-all flex items-center gap-2"
+            >
+              💾 Save Changes ({pendingChanges.length})
+            </button>
+          )}
+        </div>
 
-      <h1 className="text-2xl font-bold text-center mb-6">Course Video Management</h1>
-      
-      <div className="mb-8 flex justify-center">
-
-          {/* Add save button header */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Video Management</h1>
-        {pendingChanges.length > 0 && (
-          <button
-            onClick={handleSaveChanges}
-            className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg shadow-md transition-all"
+        {/* Course Selection */}
+        <div className="mb-8 flex justify-center">
+          <select
+            className="p-3 border border-gray-300 rounded-lg w-72 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onChange={(e) => setSelectedCourse(e.target.value)}
+            value={selectedCourse}
           >
-            💾 Save Changes ({pendingChanges.length})
-          </button>
+            <option value="">Select a Course</option>
+            {courses.map(course => (
+              <option key={course.id} value={course.id}>
+                {course.title}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Video List */}
+        {selectedCourse && (
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <div className="space-y-6">
+              {Object.keys(videos).map(title => (
+                <div key={title} className="bg-white p-5 rounded-lg shadow-md border border-gray-200">
+                  <h3 className="text-xl font-semibold text-gray-700 mb-3">{title}</h3>
+                  <Droppable droppableId={title}>
+                    {(provided) => (
+                      <ul
+                        {...provided.droppableProps}
+                        ref={provided.innerRef}
+                        className="space-y-3"
+                      >
+                        {videos[title].map((video, index) => (
+                          <Draggable
+                            key={video.id}
+                            draggableId={video.id}
+                            index={index}
+                          >
+                            {(provided) => (
+                              <li
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                className="flex justify-between items-center bg-gray-50 p-4 rounded-md shadow-sm border border-gray-300 hover:shadow-md transition-all"
+                              >
+                                <div>
+                                  <span className="font-medium text-gray-800">{video.description}</span>
+                                  <span className="text-gray-500 ml-2 text-sm">(Order: {video.order + 1})</span>
+                                </div>
+                                <button
+                                  onClick={() => handleDeleteVideo(video.id, title)}
+                                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md shadow-md transition-all"
+                                >
+                                  Delete
+                                </button>
+                              </li>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </ul>
+                    )}
+                  </Droppable>
+                </div>
+              ))}
+            </div>
+          </DragDropContext>
         )}
       </div>
-        <select
-          className="p-2 border rounded w-64"
-          onChange={(e) => setSelectedCourse(e.target.value)}
-          value={selectedCourse}
-        >
-          <option value="">Select a Course</option>
-          {courses.map(course => (
-            <option key={course.id} value={course.id}>
-              {course.title}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {selectedCourse && (
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="space-y-6">
-            {Object.keys(videos).map(title => (
-              <div key={title} className="bg-gray-50 p-4 rounded-lg shadow">
-                <h3 className="text-lg font-semibold mb-3">{title}</h3>
-                <Droppable droppableId={title}>
-                  {(provided) => (
-                    <ul
-                      {...provided.droppableProps}
-                      ref={provided.innerRef}
-                      className="space-y-2"
-                    >
-                      {videos[title].map((video, index) => (
-                        <Draggable
-                          key={video.id}
-                          draggableId={video.id}
-                          index={index}
-                        >
-                          {(provided) => (
-                            <li
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                              className="flex justify-between items-center bg-white p-3 rounded-md shadow-sm border hover:shadow-md transition-shadow"
-                            >
-                              <div>
-                                <span className="font-medium">{video.description}</span>
-                                <span className="text-gray-500 ml-2 text-sm">
-                                  (Order: {video.order})
-                                </span>
-                              </div>
-                              <button
-                                onClick={() => handleDeleteVideo(video.id, title)}
-                                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
-                              >
-                                Delete
-                              </button>
-                            </li>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </ul>
-                  )}
-                </Droppable>
-              </div>
-            ))}
-          </div>
-        </DragDropContext>
-      )}
     </div>
+
   );
 };
 
