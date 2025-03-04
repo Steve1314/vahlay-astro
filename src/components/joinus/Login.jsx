@@ -43,10 +43,10 @@ const Login = () => {
   
     if (!validateInputs()) return;
   
-    if (!recaptchaValue) {
-      setError("Please complete the reCAPTCHA verification.");
-      return;
-    }
+    // if (!recaptchaValue) {
+    //   setError("Please complete the reCAPTCHA verification.");
+    //   return;
+    // }
   
     setLoading(true);
   
@@ -149,10 +149,10 @@ const Login = () => {
           />
         </div>
 
-        <ReCAPTCHA
+        {/* <ReCAPTCHA
           sitekey={recaptchaSiteKey}
           onChange={handleRecaptchaChange}
-        />
+        /> */}
 
         <button
           onClick={handleEmailLogin}

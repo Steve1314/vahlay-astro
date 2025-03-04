@@ -81,6 +81,10 @@ const Dashboard = () => {
     navigate("/enrolledcourse"); // ✅ Ensure default view is "Enrolled Courses"
   }, [navigate]);
 
+   
+ 
+  
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-100">
       {/* Mobile Sidebar Toggle Button */}

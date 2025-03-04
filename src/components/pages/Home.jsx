@@ -101,14 +101,24 @@ const Home = () => {
   const [courses, setCourses] = useState([]);
 
 
+   // Handle mobile resizing
+   useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Fetch courses from Firestore and sort them
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      setIsLoading(false);
+      setLoading(false);
     });
 
     const fetchCourses = async () => {
       try {
+        // Fetch free and paid courses
         const freeCoursesSnapshot = await getDocs(collection(db, "freeCourses"));
         const freeCourses = freeCoursesSnapshot.docs.map((doc) => ({
           id: doc.id,
@@ -123,16 +133,53 @@ const Home = () => {
           type: "paid",
         }));
 
-        setCourses([...freeCourses, ...paidCourses]);
+        // Combine and sort the courses
+        const combinedCourses = [...paidCourses, ...freeCourses];
+
+        // Get custom order of courses from Firestore (if available)
+        const orderDoc = await getDoc(doc(db, "courseOrder", "displayOrder"));
+        if (orderDoc.exists()) {
+          const orderedIds = orderDoc.data().order; // Array of course IDs in the desired order
+          const sortedCourses = orderedIds
+            .map((id) => combinedCourses.find((course) => course.id === id))
+            .filter((course) => course);
+          setCourses(sortedCourses);
+        } else {
+          setCourses(combinedCourses); // Default order if no custom order found
+        }
       } catch (error) {
+        console.error("Error fetching courses:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchCourses();
-
     return () => unsubscribe();
   }, []);
 
+  // Fetch articles for marquee
+  const fetchData = async () => {
+    try {
+      const articlesQuery = query(collection(db, "Articles"), orderBy("createdAt", "desc"));
+      const querySnapshot = await getDocs(articlesQuery);
+      const fetchedData = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setData(fetchedData);
+    } catch (error) {
+      console.error("Error fetching articles:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // Handle course click for enrollment
   const handleCourseClick = async (course) => {
     if (!user) {
       navigate("/login");
@@ -153,48 +200,28 @@ const Home = () => {
           course.type === "free"
             ? enrolledCourses.includes(course.title)
             : enrolledCourses.some(
-              (details) =>
-                details[course.title]?.status === "active" &&
-                new Date(details[course.title]?.expiryDate) > new Date()
-            );
-            if (isEnrolled) {
-              navigate("/dashboard");
-            } else {
-              navigate(`/coursedetail/${course.id}/${course.type}`, {
-                state: { courseId: course.id, courseType: course.type },
-              });
-            }
-          } else {
-            navigate(`/coursedetail/${course.id}/${course.type}`, {
-              state: { courseId: course.id, courseType: course.type },
-            });
-          }
-        } catch (error) {
-          console.error("Error checking subscription status:", error);
-          alert("An error occurred. Please try again later.");
+                (details) =>
+                  details[course.title]?.status === "active" &&
+                  new Date(details[course.title]?.expiryDate) > new Date()
+              );
+
+        if (isEnrolled) {
+          navigate("/dashboard");
+        } else {
+          navigate(`/coursedetail/${course.id}/${course.type}`, {
+            state: { courseId: course.id, courseType: course.type },
+          });
         }
-      };
-    
-
-
-  const fetchData = async () => {
-    try {
-      // Query the "Articles" collection and order by "createdAt" in descending order
-      const articlesQuery = query(collection(db, "Articles"), orderBy("createdAt", "desc"));
-      const querySnapshot = await getDocs(articlesQuery);
-
-      const fetchedData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setData(fetchedData);
+      } else {
+        navigate(`/coursedetail/${course.id}/${course.type}`, {
+          state: { courseId: course.id, courseType: course.type },
+        });
+      }
     } catch (error) {
-    } finally {
-      setLoading(false);
+      console.error("Error checking subscription status:", error);
+      alert("An error occurred. Please try again later.");
     }
   };
-
-
 
 
   useEffect(() => {

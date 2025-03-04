@@ -16,8 +16,8 @@ const EMIDetails = () => {
   const [emiSchedules, setEmiSchedules] = useState({});
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
-     const [isLoading, setIsLoading] = useState(false);
-  
+  const [isLoading, setIsLoading] = useState(false);
+
 
   const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY;
   const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID;
@@ -133,27 +133,27 @@ const EMIDetails = () => {
               className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition"
               disabled={isLoading}
             >
-            {isLoading ? (
-    <>
-      <svg
-        className="animate-spin h-5 w-5 mr-2 text-white"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-        <path
-          className="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8v8H4z"
-        ></path>
-      </svg>
-      Processing...
-    </>
-  ) : (
-    "Pay with Razorpay"
-  )}
-</button>
+              {isLoading ? (
+                <>
+                  <svg
+                    className="animate-spin h-5 w-5 mr-2 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v8H4z"
+                    ></path>
+                  </svg>
+                  Processing...
+                </>
+              ) : (
+                "Pay with Razorpay"
+              )}
+            </button>
             {usdAmount ? (
               <PayPalScriptProvider
                 options={{
@@ -250,7 +250,7 @@ const EMIDetails = () => {
 
       if (paymentMethod === "razorpay") {
 
-        setIsLoading(true); 
+        setIsLoading(true);
         const options = {
           key: RAZORPAY_KEY,
           amount: amountInPaise,
@@ -445,7 +445,13 @@ const EMIDetails = () => {
 
 
   return (
-    <div className="flex flex-col md:flex-row h-screen min-h-screen">
+    <div className="flex flex-col md:flex-row h-screen min-h-screen"
+      style={{
+        maxHeight: '60vh',  // Set the maximum height for the scrollable container
+        overflowY: 'auto',  // Enable vertical scrolling
+        paddingRight: '10px', // Optional: Adds space to prevent the scrollbar from overlapping content
+      }}
+    >
       <aside
         className={`w-full md:w-64 bg-red-600 text-white p-4 shadow-lg transition-transform transform ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"
           } md:translate-x-0 fixed md:relative h-full z-10`}

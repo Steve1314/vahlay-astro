@@ -12,7 +12,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { useNavigate ,useLocation  } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 
@@ -70,7 +70,7 @@ const UserEmi = () => {
   const [errorMessage, setErrorMessage] = useState("");
 
   const [showPayPalButtons, setShowPayPalButtons] = useState(false);
-   const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
   const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY;
@@ -158,7 +158,7 @@ const UserEmi = () => {
 
   useEffect(() => {
     if (!courseId) return;
-    
+
     // Fetch EMI plans for the selected course
     const unsubscribePlans = onSnapshot(
       query(collection(db, "emiPlans"), where("courseId", "==", courseId)),
@@ -220,8 +220,8 @@ const UserEmi = () => {
 
 
   const handleRazorpayPayment = async () => {
-   
-    setIsLoading(true); 
+
+    setIsLoading(true);
 
     if (!selectedPlan) {
       setErrorMessage("Please select an EMI plan before proceeding.");
@@ -403,22 +403,22 @@ const UserEmi = () => {
         <div className="mb-4">
           <label className="block mb-2 font-semibold text-gray-700">Phone</label>
           <input
-  type="text"
-  value={formData.phone}
-  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-red-600 bg-gray-100"
-  readOnly // User cannot edit
-/>
+            type="text"
+            value={formData.phone}
+            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-red-600 bg-gray-100"
+            readOnly // User cannot edit
+          />
 
         </div>
         <div className="mb-4">
           <label className="block mb-2 font-semibold text-gray-700">Selected Course</label>
           <select
-  value={selectedCourse}
-  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-red-600 bg-gray-100"
-  disabled // Disable Editing
->
-  <option value="">{selectedCourse ? selectedCourse : "Loading..."}</option>
-</select>
+            value={selectedCourse}
+            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-red-600 bg-gray-100"
+            disabled // Disable Editing
+          >
+            <option value="">{selectedCourse ? selectedCourse : "Loading..."}</option>
+          </select>
         </div>
         {selectedCourse && (
           <>
@@ -440,7 +440,7 @@ const UserEmi = () => {
             </div>
           </>
         )}
-       <button
+        <button
           onClick={handleRazorpayPayment}
           disabled={!selectedPlan || !formData.name || !formData.phone}
           className={`mt-4 w-full py-2 px-4 rounded transition-colors duration-200 ${selectedPlan && formData.name && formData.phone

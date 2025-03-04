@@ -19,6 +19,7 @@ const EnrollCourse = () => {
     fullName: "NA",
     email: "NA",
   });
+  
   const navigate = useNavigate();
   const auth = getAuth();
 
@@ -94,6 +95,7 @@ const EnrollCourse = () => {
   }, [auth, navigate]);
 
   useEffect(() => {
+    setLoading(true)
     const currentUser = auth.currentUser;
 
     if (currentUser) {
@@ -127,9 +129,9 @@ const EnrollCourse = () => {
     }
   }, [db]);
 
-  if (loading) {
-    return <div className="text-center mt-10 font-bold text-red-600">Loading...</div>;
-  }
+  // if (loading) {
+  //   return <div className="text-center mt-10 font-bold text-red-600">Loading...</div>;
+  // }
 
   const MiniPieChart = ({ usedDays, daysLeft }) => {
     const data = [
@@ -140,6 +142,14 @@ const EnrollCourse = () => {
 
     if (usedDays === 0 && daysLeft === 0) {
       return <span className="text-red-400 font-medium">N/A</span>;
+    }
+
+    if (loading) {
+      return (
+        <div className="flex justify-center items-center h-screen">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-red-500"></div>
+        </div>
+      );
     }
 
     return (
@@ -161,6 +171,15 @@ const EnrollCourse = () => {
       </div>
     );
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-red-500"></div>
+      </div>
+    );
+  }
+  
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen">
@@ -274,9 +293,7 @@ const EnrollCourse = () => {
                   </button>
                 </div>
               ))}
-<div className="w-full pt-[auto] max-w-lg mx-auto p-2  md:p-5 lg:p-4 ">
-  <ActiveLink />
-</div>
+
 
             </div>
 

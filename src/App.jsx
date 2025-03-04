@@ -42,6 +42,7 @@ import AddMeeting from "./components/pages/AddMeeting";
 import VedioDetail from "./components/pages/VedioDetail";
 import PaymentGuide from './components/pages/PaymentGuide';
 
+
 import AdminCourseOrder from './components/pages/AdminCourseOrder';
 
 
@@ -64,12 +65,13 @@ import Finalize from "./components/Emi/Finalize";
 import EmiUserList from "./components/Emi/EmiUserList";
 import EMIDetails from './components/Emi/EmiDetails';
 import PayEmi from "./components/Emi/PayEmi"
+import Payment from "./components/Emi/Payment"
+import AdminPaymentList from "./components/pages/AdminPaymentList"
 
 
 
 // Article Components
 import ArticlePage1 from './components/pages/Articles/Article1';
-import Payment from "./components/pages/Payment"
 
 
 
@@ -92,6 +94,8 @@ import AdminVedioOrder from "./components/pages/AdminVedioOrder"
 
 import LanguageSelector from './components/LanguageSelector';
 import AdminTitleArrange from "./components/pages/AdminTitleArrange"
+
+import PageNotFound from './components/pages/PageNotFound';
 
 
 
@@ -120,7 +124,12 @@ const App = () => {
             <Route path="/contact-us" element={<ContactUs />} />
             <Route path="/copartners" element={<Copartners />} />
             <Route path="/paymentguide" element={<PaymentGuide />} />
+            <Route path="*" element={<PageNotFound />} />
 
+
+            
+            // In your router configuration
+            <Route  path="/pay/:courseId/:emiNumber/:planId/:encodedEmail" element={<Payment />} />    
 
             {/* Course Routes */}
             <Route path="/courses" element={<Courses />} />
@@ -266,7 +275,7 @@ const App = () => {
               path="/admin/payment"
               element={
                 <ProtectedRoutes adminOnly={true}>
-                  <Payment />
+                  <AdminPaymentList />
                 </ProtectedRoutes>
               }
             />
@@ -322,7 +331,7 @@ const App = () => {
             } />
             <Route path="admin/emailuserlist/:email" element={<ProtectedRoutes adminOnly={true} > <EMIDetails /></ProtectedRoutes>} />
             <Route path="/payemi" element={<ProtectedRoutes> <PayEmi /> </ProtectedRoutes>} />
-            <Route path="/finalize" element={<ProtectedRoutes> <Finalize />  </ProtectedRoutes>} />
+            <Route path="/finalize" element={<Finalize />}/>
             <Route path="/notifications" element={<Notifications />} />
 
             <Route path="/unauthorized" element={<Unauthorized />} />

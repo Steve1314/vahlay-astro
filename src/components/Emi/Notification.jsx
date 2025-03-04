@@ -133,9 +133,8 @@ const Notifications = () => {
               {notifications.map((notif) => (
                 <li
                   key={notif.id}
-                  className={`p-3 rounded flex flex-col gap-2 sm:flex-row sm:justify-between items-start sm:items-center ${
-                    notif.status === "unread" ? "bg-red-100" : "bg-gray-100"
-                  }`}
+                  className={`p-3 rounded flex flex-col gap-2 sm:flex-row sm:justify-between items-start sm:items-center ${notif.status === "unread" ? "bg-red-100" : "bg-gray-100"
+                    }`}
                 >
                   {/* Notification Text */}
                   <div>

@@ -202,7 +202,7 @@ const Navbar = () => {
               <h6 className="font-medium  text-base truncate"> {userName}</h6>
               <button
                 onClick={handleLogout}
-                className="bg-red-700 text-white text-sm px-4 py-2 rounded-full shadow-md hover:bg-gray-100"
+                className="bg-red-700 text-white text-sm px-4 py-2 rounded-full shadow-md hover:bg-red-900"
               >
                 Logout
               </button>

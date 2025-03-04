@@ -9,6 +9,7 @@ import QandASection from "./QuestionAndAns"; // Import the Q&A section component
 
 
 
+
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/navigation";
@@ -37,6 +38,7 @@ const PersonalCourse = () => {
 
   const [selectedTitle, setSelectedTitle] = useState("");
   const [titles, setTitles] = useState([]);
+  
 
 
   const [formData, setFormData] = useState({
@@ -53,45 +55,45 @@ const PersonalCourse = () => {
       setVideos([]);
       setStudyMaterials([]);
       setLoading(true);
-  
+
       try {
         const courseDoc = doc(db, "freeCourses", courseName);
         const courseSnapshot = await getDoc(courseDoc);
-  
+
         if (courseSnapshot.exists()) {
           setCourseType(courseSnapshot.data().type);
         }
-  
+
         // Fetch Videos from Firestore
         const videosRef = collection(db, `videos_${courseName}`);
         const videosSnapshot = await getDocs(videosRef);
-  
+
         // 1. Fetch and store videos with title & order
         const fetchedVideos = videosSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-  
+
         setVideos(fetchedVideos);
         setTotalVideos(fetchedVideos.length);
-  
+
         // 2. Group videos by title and track title-order values
         const grouped = {};
         const titleOrders = {}; // Store `title-order` for sorting sections
-  
+
         fetchedVideos.forEach((video) => {
           const title = video.title.trim();
           const titleOrder = video["title-order"] || 999; // Default large number if missing
           const videoOrder = video.order || 999; // Default large number if missing
-  
+
           if (!grouped[title]) {
             grouped[title] = [];
             titleOrders[title] = titleOrder; // Store the order of the title
           }
-  
+
           grouped[title].push({ ...video, videoOrder }); // Store videos inside titles
         });
-  
+
         // 3. Sort titles based on `title-order`
         const sortedGroups = Object.keys(grouped)
           .sort((a, b) => titleOrders[a] - titleOrders[b]) // Sorting by title-order
@@ -100,9 +102,9 @@ const PersonalCourse = () => {
             acc[key] = grouped[key].sort((a, b) => a.videoOrder - b.videoOrder);
             return acc;
           }, {});
-  
+
         setGroupedVideos(sortedGroups);
-  
+
         // Fetch Study Materials
         const materialsRef = collection(db, `materials_${courseName}`);
         const materialsSnapshot = await getDocs(materialsRef);
@@ -111,14 +113,14 @@ const PersonalCourse = () => {
           ...doc.data(),
         }));
         setStudyMaterials(fetchedMaterials);
-  
+
         if (userEmail) {
           const userSubscriptionRef = doc(db, "subscriptions", userEmail);
           const subscriptionSnapshot = await getDoc(userSubscriptionRef);
-  
+
           if (subscriptionSnapshot.exists()) {
             const subscriptionData = subscriptionSnapshot.data();
-  
+
             if (courseType === "free") {
               if (
                 subscriptionData.freecourses &&
@@ -130,36 +132,36 @@ const PersonalCourse = () => {
               const courseDetails = subscriptionData.DETAILS.find(
                 (detail) => Object.keys(detail)[0] === courseName
               );
-  
+
               if (courseDetails) {
                 const courseInfo = courseDetails[courseName];
                 const isFreeCourse = courseInfo.isFree;
-  
+
                 if (isFreeCourse) {
                   setValidityPercentage(null);
                 } else {
                   let daysLeft = 0;
                   let usedDays = 0;
                   let totalDays = 0;
-  
+
                   if (courseInfo.subscriptionDate && courseInfo.expiryDate) {
                     const subDate = new Date(courseInfo.subscriptionDate);
                     const expDate = new Date(courseInfo.expiryDate);
                     const now = new Date();
-  
+
                     const totalTime = expDate.getTime() - subDate.getTime();
                     totalDays = Math.floor(totalTime / (1000 * 3600 * 24));
-  
+
                     const usedTime = now.getTime() - subDate.getTime();
                     usedDays =
                       usedTime > 0
                         ? Math.floor(usedTime / (1000 * 3600 * 24))
                         : 0;
-  
+
                     const rawDaysLeft = totalDays - usedDays;
                     daysLeft = rawDaysLeft < 0 ? 0 : rawDaysLeft;
                   }
-  
+
                   if (totalDays > 0) {
                     const validityPercent = Math.floor(
                       (daysLeft / totalDays) * 100
@@ -169,7 +171,7 @@ const PersonalCourse = () => {
                     setValidityPercentage("0");
                   }
                 }
-  
+
                 setWatchedVideos(courseInfo.watchedVideos || []);
               }
             }
@@ -181,10 +183,10 @@ const PersonalCourse = () => {
         setLoading(false);
       }
     };
-  
+
     fetchCourseData();
   }, [courseName, userEmail, courseType]);
-  
+
 
   const SubscriptionValidity = () => {
     if (courseType === "free") {
@@ -382,7 +384,9 @@ const PersonalCourse = () => {
 
   if (loading) {
     return (
-      <div className="text-center mt-10 text-red-500 font-bold">Loading...</div>
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-red-500"></div>
+      </div>
     );
   }
 
@@ -657,5 +661,18 @@ const PersonalCourse = () => {
 };
 
 export default PersonalCourse;
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

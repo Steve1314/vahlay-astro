@@ -163,7 +163,7 @@ const App = () => {
     // Authenticate with Backend
     const authenticate = async () => {
         try {
-            const response = await fetch("http://localhost:5000/meeting/authenticate");
+            const response = await fetch("https://backend-7e8f.onrender.com/meeting/authenticate");
             const data = await response.json();
             alert(data.message);
         } catch (error) {
@@ -175,7 +175,7 @@ const App = () => {
 
     const checkHostStatus = async (meetingId) => {
         try {
-            const response = await fetch(`http://localhost:5000/meeting/status/${meetingId}`);
+            const response = await fetch(`https://backend-7e8f.onrender.com/meeting/status/${meetingId}`);
             const data = await response.json();
 
             if (data.isAssistantHost) {
@@ -191,7 +191,7 @@ const App = () => {
     // Create a new meeting
     const createMeeting = async () => {
         try {
-            const response = await fetch("http://localhost:5000/meeting/create", {
+            const response = await fetch("https://backend-7e8f.onrender.com/meeting/create", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" }
             });
@@ -314,3 +314,165 @@ export default App;
 
 
 
+
+
+
+
+
+// import React, { useState, useEffect, useCallback } from "react";
+// import { db } from "../../firebaseConfig";
+// import { collection, addDoc, getDocs, doc, updateDoc, query, where } from "firebase/firestore";
+
+// const App = () => {
+//     const [meetings, setMeetings] = useState([]);
+//     const [loading, setLoading] = useState(false);
+//     const [error, setError] = useState(null);
+
+//     const fetchMeetings = useCallback(async () => {
+//         try {
+//             const q = query(
+//                 collection(db, "meetings"), 
+//                 where("active", "==", true)
+//             );
+//             const snapshot = await getDocs(q);
+//             const meetingsData = snapshot.docs.map(doc => ({
+//                 id: doc.id,
+//                 ...doc.data(),
+//                 createdAt: doc.data().createdAt.toDate()
+//             }));
+//             setMeetings(meetingsData);
+//         } catch (err) {
+//             setError("Failed to load meetings");
+//         }
+//     }, []);
+
+//     useEffect(() => {
+//         fetchMeetings();
+//     }, [fetchMeetings]);
+
+//     const createMeeting = async () => {
+//         setLoading(true);
+//         setError(null);
+        
+//         try {
+//             const controller = new AbortController();
+//             const timeoutId = setTimeout(() => controller.abort(), 45000);
+
+//             const response = await fetch("http://localhost:5000/meeting/create", {
+//                 method: "POST",
+//                 headers: { "Content-Type": "application/json" },
+//                 signal: controller.signal
+//             });
+            
+//             clearTimeout(timeoutId);
+
+//             if (!response.ok) {
+//                 const errorData = await response.json();
+//                 throw new Error(errorData.message || 'Meeting creation failed');
+//             }
+
+//             const data = await response.json();
+            
+//             await addDoc(collection(db, "meetings"), {
+//                 link: data.meetingLink,
+//                 meetingId: data.meetingId,
+//                 createdAt: new Date(),
+//                 active: true,
+//                 expiration: data.expiration
+//             });
+
+//             await fetchMeetings();
+
+//         } catch (err) {
+//             setError(err.message || 'Failed to create meeting');
+//             if (err.name === 'AbortError') {
+//                 setError('Request timed out. Please try again.');
+//             }
+//         } finally {
+//             setLoading(false);
+//         }
+//     };
+
+//     const endMeeting = async (meetingId) => {
+//         try {
+//             const response = await fetch(
+//                 `http://localhost:5000/meeting/end/${meetingId}`,
+//                 { method: "DELETE" }
+//             );
+
+//             if (!response.ok) {
+//                 throw new Error('Failed to end meeting');
+//             }
+
+//             await updateDoc(doc(db, "meetings", meetingId), {
+//                 active: false,
+//                 endedAt: new Date()
+//             });
+
+//             await fetchMeetings();
+
+//         } catch (err) {
+//             setError(err.message || 'Failed to end meeting');
+//         }
+//     };
+
+//     return (
+//         <div className="container mx-auto p-4">
+//             <div className="max-w-2xl mx-auto">
+//                 <h1 className="text-2xl font-bold mb-6">Meeting Manager</h1>
+
+//                 <button 
+//                     onClick={createMeeting}
+//                     disabled={loading}
+//                     className={`w-full py-2 px-4 mb-6 rounded ${
+//                         loading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700 text-white'
+//                     }`}
+//                 >
+//                     {loading ? 'Creating Meeting...' : 'Create New Meeting'}
+//                 </button>
+
+//                 {error && (
+//                     <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
+//                         Error: {error}
+//                     </div>
+//                 )}
+
+//                 <div className="space-y-4">
+//                     <h2 className="text-xl font-semibold mb-3">Active Meetings</h2>
+                    
+//                     {meetings.length === 0 ? (
+//                         <p className="text-gray-600">No active meetings found</p>
+//                     ) : (
+//                         meetings.map(meeting => (
+//                             <div key={meeting.id} className="p-4 border rounded-lg shadow-sm">
+//                                 <div className="flex justify-between items-center">
+//                                     <div>
+//                                         <a
+//                                             href={meeting.link}
+//                                             target="_blank"
+//                                             rel="noopener noreferrer"
+//                                             className="text-blue-600 hover:underline"
+//                                         >
+//                                             Join Meeting
+//                                         </a>
+//                                         <p className="text-sm text-gray-500 mt-1">
+//                                             Created: {meeting.createdAt.toLocaleString()}
+//                                         </p>
+//                                     </div>
+//                                     <button
+//                                         onClick={() => endMeeting(meeting.meetingId)}
+//                                         className="px-3 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200"
+//                                     >
+//                                         End Meeting
+//                                     </button>
+//                                 </div>
+//                             </div>
+//                         ))
+//                     )}
+//                 </div>
+//             </div>
+//         </div>
+//     );
+// };
+
+// export default App;
