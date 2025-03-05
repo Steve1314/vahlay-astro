@@ -118,8 +118,8 @@ const App = () => {
             <Route path="/login" element={<Login />} />
             <Route path="/forgetpassword" element={<Forgetpassword />} />
             <Route path="/appointment" element={<Appointment />} />
-            <Route path="/newuser" element={<ProtectedRoutes  ><NewUser /></ProtectedRoutes>} />
-            <Route path="/olduser" element={<ProtectedRoutes><OldUser /></ProtectedRoutes>} />
+            <Route path="/newuser" element={<NewUser />} />
+            <Route path="/olduser" element={<OldUser />} />
             <Route path="/submission-success" element={<ProtectedRoutes><SuccessPage /></ProtectedRoutes>} />
             <Route path="/contact-us" element={<ContactUs />} />
             <Route path="/copartners" element={<Copartners />} />
@@ -127,16 +127,16 @@ const App = () => {
             <Route path="*" element={<PageNotFound />} />
 
 
-            
+
             // In your router configuration
-            <Route  path="/pay/:courseId/:emiNumber/:planId/:encodedEmail" element={<Payment />} />    
+            <Route path="/pay/:courseId/:emiNumber/:planId/:encodedEmail" element={<Payment />} />
 
             {/* Course Routes */}
             <Route path="/courses" element={<Courses />} />
 
 
             {/* <Route path="/coursedetail/:id" element={<CourseDetail />} /> */}
-            <Route path="/coursedetail/:courseId/:courseType" element={<ProtectedRoutes><CourseDetail /></ProtectedRoutes>} />
+            <Route path="/coursedetail/:courseId/:courseType" element={<CourseDetail />} />
 
 
 
@@ -152,8 +152,8 @@ const App = () => {
             <Route path="/articles" element={<Blogs />} />
 
             {/* Calendar Routes */}
-            <Route path="/calendar" element={<ProtectedRoutes><Calendar /></ProtectedRoutes>} />
-            <Route path="/calendar2" element={<ProtectedRoutes><Calendar2 /></ProtectedRoutes>} />
+            <Route path="/calendar" element={<Calendar />} />
+            <Route path="/calendar2" element={<Calendar2 />} />
 
             {/* Article Routes */}
             <Route path="/article/:id" element={<ArticlePage1 />} />
@@ -331,7 +331,7 @@ const App = () => {
             } />
             <Route path="admin/emailuserlist/:email" element={<ProtectedRoutes adminOnly={true} > <EMIDetails /></ProtectedRoutes>} />
             <Route path="/payemi" element={<ProtectedRoutes> <PayEmi /> </ProtectedRoutes>} />
-            <Route path="/finalize" element={<Finalize />}/>
+            <Route path="/finalize" element={<Finalize />} />
             <Route path="/notifications" element={<Notifications />} />
 
             <Route path="/unauthorized" element={<Unauthorized />} />

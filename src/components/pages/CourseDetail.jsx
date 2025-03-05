@@ -1,41 +1,41 @@
-
-
-
-
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { db } from "../../firebaseConfig"; // Firebase config file
 import { doc, getDoc } from "firebase/firestore";
 import { useParams } from "react-router-dom";
-
+import { RiShareForwardFill } from "react-icons/ri"; // Share icon
+import { FaFacebookF, FaTwitter, FaLinkedinIn, FaWhatsapp, FaEnvelope, FaTelegram, FaRedditAlien, FaPinterestP } from "react-icons/fa";
+ 
+ 
+ 
 const CourseDetail = () => {
   const [courseData, setCourseData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showShareOptions, setShowShareOptions] = useState(false);
+ 
   const location = useLocation();
   const navigate = useNavigate();
-
-
+ 
+ 
   const { courseId, courseType } = useParams()
-
-
+ 
+ 
   useEffect(() => {
     const fetchCourseDetails = async () => {
+      if (!courseId || !courseType) {
+        alert("Invalid course information.");
+        navigate("/");
+        return;
+      }
+ 
       try {
-        const { courseId, courseType } = location.state || {};
-
-        if (!courseId || !courseType) {
-          alert("Invalid course information.");
-          navigate("/");
-          return;
-        }
-
         const courseRef = doc(
           db,
           courseType === "free" ? "freeCourses" : "paidCourses",
           courseId
         );
         const courseSnap = await getDoc(courseRef);
-
+ 
         if (courseSnap.exists()) {
           setCourseData({ id: courseId, type: courseType, ...courseSnap.data() });
         } else {
@@ -50,18 +50,42 @@ const CourseDetail = () => {
         setLoading(false);
       }
     };
-
+ 
     fetchCourseDetails();
-  }, [location, navigate]);
-
+  }, [courseId, courseType, navigate]);
+ 
+ 
   if (loading) {
-    return <div className="text-center mt-10">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-red-500"></div>
+      </div>
+    );
   }
-
+ 
   if (!courseData) {
     return <div className="text-center mt-10 text-red-500">Course not found.</div>;
   }
-
+ 
+    // Function to share the article
+    const currentUrl = window.location.href;
+    const imageUrl = courseData.imageUrl || "/assets/default-course.jpg";
+    const shareText = `Check out this course: ${courseData.title} - ${courseData.Subtitle}`;
+ 
+    const shareArticle = () => {
+      if (navigator.share) {
+        navigator
+          .share({
+            title: courseData.title,
+            text: shareText,
+            url: currentUrl
+          })
+          .then(() => console.log("Course shared successfully!"))
+          .catch((error) => console.error("Error sharing course:", error));
+      } else {
+        setShowShareOptions(!showShareOptions);
+      }
+    };
   return (
     <div>
       {/* Hero Section */}
@@ -69,6 +93,28 @@ const CourseDetail = () => {
         className="bg-white"
         style={{ backgroundImage: "url('/assets/Screenshot 2024-11-28 211019.png')" }}
       >
+ 
+<div className="p-4">
+<button
+            onClick={shareArticle}
+            className="flex items-center justify-center space-x-2 text-white bg-red-600 px-4 py-2 rounded-md shadow-md hover:bg-red-700 w-6/9 sm:w-auto sm:px-6 sm:py-3"
+          >
+            <RiShareForwardFill className="text-lg sm:text-xl " />
+            <span className="hidden sm:inline text-sm sm:text-base">Share</span>
+          </button>
+          {showShareOptions && (
+            <div className="flex space-x-4 mt-2">
+              <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-xl"><FaFacebookF /></a>
+              <a href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(currentUrl)}&text=${encodeURIComponent(shareText)}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 text-xl"><FaTwitter /></a>
+              <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}`} target="_blank" rel="noopener noreferrer" className="text-blue-700 text-xl"><FaLinkedinIn /></a>
+              <a href={`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + ' - ' + currentUrl)}`} target="_blank" rel="noopener noreferrer" className="text-green-500 text-xl"><FaWhatsapp /></a>
+              <a href={`mailto:?subject=${encodeURIComponent(shareText)}&body=${encodeURIComponent('Check out this amazing course: ' + currentUrl)}`} className="text-red-500 text-xl"><FaEnvelope /></a>
+              <a href={`https://t.me/share/url?url=${encodeURIComponent(currentUrl)}&text=${encodeURIComponent(shareText)}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 text-xl"><FaTelegram /></a>
+              <a href={`https://www.reddit.com/submit?url=${encodeURIComponent(currentUrl)}&title=${encodeURIComponent(shareText)}`} target="_blank" rel="noopener noreferrer" className="text-orange-600 text-xl"><FaRedditAlien /></a>
+              <a href={`https://pinterest.com/pin/create/button/?url=${encodeURIComponent(currentUrl)}&media=${encodeURIComponent(imageUrl)}&description=${encodeURIComponent(shareText)}`} target="_blank" rel="noopener noreferrer" className="text-red-600 text-xl"><FaPinterestP /></a>
+            </div>
+          )}
+        </div>
         <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center">
           {/* Left Content */}
           <div className="space-y-4 md:w-2/3 ">
@@ -84,7 +130,7 @@ const CourseDetail = () => {
               </p>
             </div>
           </div>
-
+ 
           {/* Right Content - Image */}
           <div className="mt-6 md:mt-0 md:w-1/3">
             <img
@@ -94,7 +140,7 @@ const CourseDetail = () => {
           </div>
         </div>
       </section>
-
+ 
       {/* Bottom Info Section */}
       <div className="bg-red-600 relative flex">
         {/* Left Section */}
@@ -122,7 +168,7 @@ const CourseDetail = () => {
                 <p className="text-white text-sm">Q+A session Extra</p>
               </div>
             </div>
-
+ 
             <div className="flex items-center space-x-3 mt-4 md:mt-0">
               <div className="text-white">
                 <svg
@@ -145,7 +191,7 @@ const CourseDetail = () => {
                 <p className="text-white text-sm">Progress at your own speed</p>
               </div>
             </div>
-
+ 
             <div className="flex items-center space-x-3 mt-4 md:mt-0">
               <div className="text-white">
                 <svg
@@ -170,18 +216,18 @@ const CourseDetail = () => {
             </div>
           </div>
         </div>
-
-
+ 
+ 
         {/* Right Section */}
         <Link to={courseData.type === "free" ? `/enrollfree` : `/enroll/${courseId}/${courseType}`}>
   <button className="mt-6 text-white bg-red-400 px-10 py-4 text-xl rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 hover:bg-red-100 hover:text-red-600 animate-bounce">
     {courseData.type === "free" ? "Enroll for Free" : "Enroll Now"}
   </button>
 </Link>
-
+ 
       </div>
-
-
+ 
+ 
       {/* What You Will Learn Section */}
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-2 gap-10">
@@ -195,12 +241,12 @@ const CourseDetail = () => {
     item.trim() ? <li className="mb-2"key={index}>{item}</li> : null
   )}
 </ul>
-
+ 
             <p className="mt-8 text-xl text-center lg:text-left font-semibold text-red-600">
               Classes Conducted Twice Weekly - 24 Lectures + Interactive Q&A
             </p>
           </div>
-
+ 
           {/* Right - Course Image */}
           <div className="flex justify-center items-center">
             <img
@@ -211,7 +257,7 @@ const CourseDetail = () => {
           </div>
         </div>
       </section>
-
+ 
       {/* Why You Should Enroll Section */}
       <section className="bg-red-50 py-16">
         <div className="max-w-7xl mx-auto px-4">
@@ -225,7 +271,7 @@ const CourseDetail = () => {
           </ul>
         </div>
       </section>
-
+ 
       {/* How You Learn Section */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 text-center">
@@ -238,7 +284,7 @@ const CourseDetail = () => {
           </p>
         </div>
       </section>
-
+ 
       {/* Testimonials Section */}
       <section className="bg-gray-50 py-16">
         <div className="max-w-7xl mx-auto px-4">
@@ -275,27 +321,16 @@ const CourseDetail = () => {
           </div>
         </div>
       </section>
-
-
+ 
+ 
       <Link to={courseData.type === "free" ? `/enrollfree` : `/enroll/${courseId}/${courseType}`}>
   <button className="mt-6 text-white bg-red-400 px-10 py-4 text-xl rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 hover:bg-red-100 hover:text-red-600 animate-bounce">
     {courseData.type === "free" ? "Enroll for Free" : "Enroll Now"}
   </button>
 </Link>
-
+ 
     </div>
   );
 };
-
+ 
 export default CourseDetail;
-
-
-
-
-
-
-
-
-
-
-
