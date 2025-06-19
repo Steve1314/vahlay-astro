@@ -73,7 +73,7 @@ const EnrollPage = () => {
         });
       }
       alert("You have successfully enrolled!");
-      navigate("/dashboard");
+      navigate("/enrolledcourse");
     } catch (error) {
       console.error("Error adding document: ", error);
       alert("There was an error processing your enrollment. Please try again.");

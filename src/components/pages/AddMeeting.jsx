@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import Admin from './Admin';
 import '@whereby.com/browser-sdk/embed';
@@ -32,7 +32,6 @@ const ScheduleMeeting = () => {
     };
     fetchCourses();
   }, []);
-
   useEffect(() => {
     const fetchMeetings = async () => {
       try {
@@ -52,46 +51,96 @@ const ScheduleMeeting = () => {
       setIsFullscreen(fs);
     }
   }, []);
-
   const handleOpenPopup = (url) => {
     setIframeUrl(url);
     setShowIframe(true);
     setIsFullscreen(false);
     localStorage.setItem('liveMeeting', JSON.stringify({ url, isFullscreen: false }));
   };
-
   const handleClosePopup = () => {
     setShowIframe(false);
     setIframeUrl('');
     setIsFullscreen(false);
     localStorage.removeItem('liveMeeting');
   };
+  const handleDeleteMeeting = async (meetingId) => {
+    try {
+      // if using Firestore:
+      await deleteDoc(doc(db, "meetings", meetingId));
 
+      // optionally update local state:
+      setMeetings((prev) => prev.filter((m) => m.id !== meetingId));
+
+      alert("Meeting deleted successfully");
+    } catch (error) {
+      console.error("Error deleting meeting:", error);
+      alert("Failed to delete meeting");
+    }
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedCourse || !subject || !startDate) {
+
+    // 1. Basic field validation
+    if (!selectedCourse || !subject.trim() || !startDate || !duration) {
       return alert('Please fill all fields.');
     }
+
+    const durationNum = Number(duration);
+
+    // 2. Start date must be today or in the future
+    const selectedDate = new Date(startDate);
+    const now = new Date();
+    if (selectedDate < new Date(now.setHours(0, 0, 0, 0))) {
+      return alert('Start date must be today or in the future.');
+    }
+
+    // 3. Duration must be a positive number
+    if (isNaN(durationNum) || durationNum <= 0) {
+      return alert('Duration must be a positive number.');
+    }
+
+    // 4. Check time overlap for same course
+    const newStart = new Date(startDate).getTime();
+    const newEnd = newStart + durationNum * 60 * 1000;
+
+    const isConflict = meetings.some((m) => {
+      if (m.courseId !== selectedCourse) return false;
+
+      const existingStart = new Date(m.startDate).getTime();
+      const existingEnd = existingStart + Number(m.duration) * 60 * 1000;
+
+      // Overlap condition
+      return newStart < existingEnd && existingStart < newEnd;
+    });
+
+    if (isConflict) {
+      return alert('A meeting already exists with this timeduration for this course.');
+    }
+
+    // 5. Proceed to create meeting
     try {
       const response = await axios.post('https://cloudastro.space/api/create-room', {
         startDate,
       });
-      console.log(response)
+
       const meeting = response.data.meeting;
+
       await addDoc(collection(db, 'meetings'), {
         courseId: selectedCourse,
-        subject,
+        subject: subject.trim(),
         startDate,
-        duration,
+        duration: durationNum,
         ringCentralMeeting: meeting,
         createdAt: serverTimestamp(),
       });
-      console.log(meeting);
+
+      alert('Meeting scheduled!');
       setSubject('');
       setStartDate('');
       setDuration(30);
       setSelectedCourse('');
-      alert('Meeting scheduled!');
+
+      // Refresh meetings list
       const snap = await getDocs(collection(db, 'meetings'));
       setMeetings(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (err) {
@@ -99,7 +148,8 @@ const ScheduleMeeting = () => {
       alert('Failed to schedule meeting.');
     }
   };
-console.log(meetings)
+
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">
       <aside className="w-full md:w-1/6 bg-white shadow-md">
@@ -124,7 +174,7 @@ console.log(meetings)
             </div>
             <div>
               <label className="block text-gray-700 mb-1">Date</label>
-              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full border p-2 rounded-md" required />
+              <input type="datetime-local" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full border p-2 rounded-md" required />
             </div>
             <div>
               <label className="block text-gray-700 mb-1">Duration (mins)</label>
@@ -144,16 +194,40 @@ console.log(meetings)
                 <div key={m.id} className="border p-4 rounded-lg shadow hover:shadow-md">
                   <div className="flex justify-between items-center mb-2">
                     <h3 className="text-lg font-semibold text-red-600">{m.subject}</h3>
-                                    
 
                     <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded">{m.duration} mins</span>
+
                   </div>
-                  <p className="text-sm text-gray-600">🕒 {new Date(m.startDate).toLocaleDateString()}</p>
+                  <h3 className="text-lg font-semibold text-gray-600">{m.courseId}</h3>
+
+                  <p className="text-sm text-gray-600"><p className="text-sm text-gray-600">
+                    🕒 {new Date(m.startDate).toLocaleString()}
+                  </p>
+                  </p>
                   {m.ringCentralMeeting?.roomUrl && (
-                    <button onClick={() => handleOpenPopup(m.ringCentralMeeting.roomUrl)} className="text-blue-600 underline">
-                      Join
-                    </button>
+                    <>
+                      <button
+                        onClick={() => window.open(m.ringCentralMeeting.roomUrl, '_blank')}
+                        className="text-blue-600 underline mr-2"
+                      >
+                        Join
+                      </button>
+
+                      <button
+                        onClick={() => navigator.clipboard.writeText(m.ringCentralMeeting.roomUrl)}
+                        className="text-blue-600 underline mr-2"
+                      >
+                        Copy URL
+                      </button>
+                      <button
+                        onClick={() => handleDeleteMeeting(m.id)}
+                        className="text-red-600 underline"
+                      >
+                        Delete
+                      </button>
+                    </>
                   )}
+
                 </div>
               ))}
             </div>
@@ -161,69 +235,47 @@ console.log(meetings)
         </div>
 
         {showIframe && (
-          <div
-            className={`z-50 ${isFullscreen ? 'fixed top-0 left-0 w-screen h-screen' : 'fixed inset-0'} pointer-events-auto`}
-            style={{ overflow: 'hidden' }}
-          >
+          <div className={`z-50 ${isFullscreen ? 'fixed top-0 left-0 w-screen h-screen' : 'fixed inset-0'} pointer-events-auto`} style={{ overflow: 'hidden' }}>
             <div className="relative w-full h-full">
               {isFullscreen ? (
-                // Fullscreen mode — NO dragging, fill entire screen
                 <div className="w-full h-full bg-white rounded-lg overflow-hidden shadow-lg flex flex-col">
                   <div className="flex justify-between items-center p-2 bg-red-600 text-white select-none">
                     <span className="font-bold">🔴 Live Meeting</span>
                     <div className="space-x-2">
-                      <button
-                        onClick={() => setIsFullscreen(false)}
-                        className="bg-white text-red-600 px-3 py-1 rounded text-sm"
-                      >
-                        Exit Fullscreen
-                      </button>
-                      <button
-                        onClick={handleClosePopup}
-                        className="bg-white text-red-600 px-3 py-1 rounded text-sm"
-                      >
-                        ✕
-                      </button>
+                      <button onClick={() => setIsFullscreen(false)} className="bg-white text-red-600 px-3 py-1 rounded text-sm">Exit Fullscreen</button>
+                      <button onClick={handleClosePopup} className="bg-white text-red-600 px-3 py-1 rounded text-sm">✕</button>
                     </div>
                   </div>
-                  <whereby-embed
-                    room={iframeUrl}
-                    class="w-full flex-grow"
+                  <iframe
+                    src={iframeUrl}
+                    className="w-full flex-grow"
                     allow="camera; microphone; fullscreen; speaker; display-capture"
-                  ></whereby-embed>
+                    allowFullScreen
+                  ></iframe>
                 </div>
               ) : (
-                // Draggable mode (non-fullscreen)
                 <Draggable handle=".drag-header" bounds="parent">
                   <div className="absolute top-20 left-20 w-[90vw] md:w-[700px] h-[500px] bg-white rounded-lg overflow-hidden shadow-lg flex flex-col">
                     <div className="drag-header flex justify-between items-center p-2 bg-red-600 text-white cursor-move select-none">
                       <span className="font-bold">🔴 Live Meeting</span>
                       <div className="space-x-2">
-                        <button
-                          onClick={() => setIsFullscreen(true)}
-                          className="bg-white text-red-600 px-3 py-1 rounded text-sm"
-                        >
-                          Fullscreen
-                        </button>
-                        <button
-                          onClick={handleClosePopup}
-                          className="bg-white text-red-600 px-3 py-1 rounded text-sm"
-                        >
-                          ✕
-                        </button>
+                        <button onClick={() => setIsFullscreen(true)} className="bg-white text-red-600 px-3 py-1 rounded text-sm">Fullscreen</button>
+                        <button onClick={handleClosePopup} className="bg-white text-red-600 px-3 py-1 rounded text-sm">✕</button>
                       </div>
                     </div>
-                    <whereby-embed
-                      room={iframeUrl}
-                      class="w-full flex-grow"
+                    <iframe
+                      src={iframeUrl}
+                      className="w-full flex-grow"
                       allow="camera; microphone; fullscreen; speaker; display-capture"
-                    ></whereby-embed>
+                      allowFullScreen
+                    ></iframe>
                   </div>
                 </Draggable>
               )}
             </div>
           </div>
         )}
+
 
 
       </main>

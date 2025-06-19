@@ -1,8 +1,13 @@
-import React, { useState } from "react";
+import React, { useState,useEffect  } from "react";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { db, auth } from "../firebaseConfig"; // Firebase config file
+import { doc, getDocs, getDoc, collection } from "firebase/firestore";
+
+
+
 import { Link } from "react-router-dom";
 import {
   FaFacebookF,
- 
   FaInstagram,
   FaYoutube,
   FaLinkedin,
@@ -12,6 +17,64 @@ import {
 import { FaXTwitter } from "react-icons/fa6";
 
 const Footer = () => {
+  const [courses, setCourses] = useState([]);
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setIsLoading(false);
+    });
+
+    const fetchCourses = async () => {
+      try {
+        const freeCoursesSnapshot = await getDocs(collection(db, "freeCourses"));
+        const freeCourses = freeCoursesSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          type: "free",
+        }));
+
+        const paidCoursesSnapshot = await getDocs(collection(db, "paidCourses"));
+        const paidCourses = paidCoursesSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          type: "paid",
+        }));
+
+        const combinedCourses = [...paidCourses, ...freeCourses];
+
+        const orderDoc = await getDoc(doc(db, "courseOrder", "displayOrder"));
+        if (orderDoc.exists()) {
+          const orderedIds = orderDoc.data().order;
+          const orderedCourses = orderedIds
+            .map(id => combinedCourses.find(c => c.id === id))
+            .filter(c => c); // only keep found courses
+
+          // Find remaining courses not in the order list
+          const remainingCourses = combinedCourses.filter(c => !orderedIds.includes(c.id));
+
+          // Combine both ordered and remaining courses
+          const finalCourses = [...orderedCourses, ...remainingCourses];
+
+          setCourses(finalCourses);
+        } else {
+          setCourses(combinedCourses);
+        }
+      } catch (error) {
+        console.error("Error fetching courses:", error);
+        alert("Failed to fetch courses. Please try again later.");
+      }
+    };
+
+
+    fetchCourses();
+
+    return () => unsubscribe();
+  }, []);
+  console.log(courses)
   return (
     <footer className="relative bg-red-600 text-white py-6 px-4">
       {/* Background Image & Overlay */}
@@ -57,6 +120,7 @@ const Footer = () => {
             </div>
 
             {/* Overview Section */}
+
             <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
               <h3 className="text-lg font-bold text-orange-200 mb-4">
                 Overview
@@ -100,28 +164,18 @@ const Footer = () => {
               <h3 className="text-lg font-bold text-orange-200 mb-4">
                 Courses
               </h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link to="#" className="hover:text-gray-300">
-                    New Edge Bhagavad Gita
-                  </Link>
-                </li>
-                <li>
-                  <Link to="#" className="hover:text-gray-300">
-                    Narad Puran
-                  </Link>
-                </li>
-                <li>
-                  <Link to="#" className="hover:text-gray-300">
-                    Foundations of Vedic Astrology
-                  </Link>
-                </li>
-                <li>
-                  <Link to="#" className="hover:text-gray-300">
-                    The Essentials of Self-Discovery
-                  </Link>
-                </li>
-              </ul>
+              {courses.map((course) => (
+                <ul className="space-y-2" id={course.id}>
+                  <li>
+                    <Link to={`/coursedetail/${course.id}/${course.type}`} className="hover:text-gray-300">
+                    {course.id}
+                    </Link>
+                  </li>
+                </ul>
+              ))}
+
+
+
             </div>
 
             {/* Contact Section */}
@@ -230,7 +284,7 @@ const Footer = () => {
 
           {/* 3) Social Icons (centered) */}
           <div className="flex justify-center space-x-4 mt-5">
-          <a
+            <a
               href="https://www.facebook.com/profile.php?id=61572501694342"
               target="_blank"
               rel="noopener noreferrer"

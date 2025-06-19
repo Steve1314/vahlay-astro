@@ -16,7 +16,8 @@ import { PieChart } from "react-minimal-pie-chart";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { db } from "../../firebaseConfig";
 import QandASection from "./QuestionAndAns"; // Your Q&A section component
-
+import '@whereby.com/browser-sdk/embed';
+import Draggable from 'react-draggable';
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/navigation";
@@ -38,6 +39,12 @@ const PersonalCourse = () => {
   const [userEmail, setUserEmail] = useState(null);
   const [activeVideo, setActiveVideo] = useState(null);
   const [meetingUrl, setMeetingUrl] = useState("");
+  const [meetings, setMeetings] = useState([]);
+  const [iframeUrl, setIframeUrl] = useState('');
+  const [showIframe, setShowIframe] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [courses, setCourses] = useState([]);
+  const [selectedCourse, setSelectedCourse] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [courseType, setCourseType] = useState(null);
@@ -183,6 +190,44 @@ const PersonalCourse = () => {
     fetchCourseData();
   }, [courseName, userEmail, courseType]);
 
+
+  useEffect(() => {
+    const fetchMeetings = async () => {
+      try {
+        const snap = await getDocs(collection(db, 'meetings'));
+        const allMeetings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        // Filter meeting by courseName
+        const courseMeeting = allMeetings.find(
+          (m) => m.courseId === courseName
+        );
+
+        if (courseMeeting && courseMeeting.viewerRoomUrl) {
+          setMeetingUrl(courseMeeting.viewerRoomUrl);
+        }
+      } catch (err) {
+        console.error('Error fetching meetings:', err);
+      }
+    };
+
+    fetchMeetings();
+  }, [courseName]);
+
+  const handleOpenPopup = (url) => {
+    setIframeUrl(url);
+    setShowIframe(true);
+    setIsFullscreen(false);
+    localStorage.setItem('liveMeeting', JSON.stringify({ url, isFullscreen: false }));
+  };
+
+  const handleClosePopup = () => {
+    setShowIframe(false);
+    setIframeUrl('');
+    setIsFullscreen(false);
+    localStorage.removeItem('liveMeeting');
+  };
+
+  console.log(meetings)
   /**
    * -----------------------
    *  FETCH EMI DETAILS
@@ -273,7 +318,7 @@ const PersonalCourse = () => {
           Subscription Validity
         </h3>
         {typeof validityPercentage === "string" &&
-        validityPercentage === "Lifetime Access" ? (
+          validityPercentage === "Lifetime Access" ? (
           <p className="text-center text-xl text-red-700">Lifetime Access</p>
         ) : validityPercentage === "0" ? (
           <p className="text-center text-xl text-red-700">Expired</p>
@@ -319,9 +364,9 @@ const PersonalCourse = () => {
         const subscriptionData = docSnapshot.data();
         console.log(subscriptionData)
         const courseDetails = subscriptionData.DETAILS.find(
-          
+
           (detail) => Object.keys(detail)[0] === courseName
-         
+
         );
         if (courseDetails) {
           const watchedVideosList = courseDetails[courseName].watchedVideos || [];
@@ -441,38 +486,50 @@ const PersonalCourse = () => {
    * -----------------------
    */
   useEffect(() => {
-    const fetchLatestMeeting = async () => {
+    const fetchMeetings = async () => {
       try {
-        const meetingsRef = collection(db, "meetings");
-        const q1 = query(meetingsRef, orderBy("createdAt", "desc"), limit(1));
-        const querySnapshot = await getDocs(q1);
+        const meetingsRef = collection(db, 'meetings');
+        const q = query(meetingsRef, where('courseId', '==', courseName));
+        const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
-          const latestMeeting = querySnapshot.docs[0].data();
-          setMeetingUrl(latestMeeting.link?.trim());
+          const meetingDocs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setMeetings(meetingDocs);
+        } else {
+          setMeetings([]);
         }
-      } catch (error) {
-        console.error("Error fetching latest meeting details:", error);
+      } catch (err) {
+        console.error('Error fetching meetings:', err);
       }
     };
-    fetchLatestMeeting();
-  }, []);
 
+    if (courseName) {
+      fetchMeetings();
+    }
+  }, [courseName]);
+  console.log(meetings)
   /**
    * -----------------------
    *  JOIN LIVE SESSION
    * -----------------------
    */
   const handleRedirect = () => {
-    if (meetingUrl) {
-      const validUrl = meetingUrl.startsWith("http")
-        ? meetingUrl
-        : `https://${meetingUrl}`;
-      window.open(validUrl, "_blank");
+    if (meetings.length > 0) {
+      const latestMeeting = meetings[meetings.length - 1];
+      const url = latestMeeting.viewerRoomUrl || latestMeeting.ringCentralMeeting?.viewerRoomUrl;
+      if (url && url.startsWith("http")) {
+        setIframeUrl(url);
+        setShowIframe(true);
+      } else {
+        alert("Valid meeting URL not found.");
+      }
     } else {
-      alert("Meeting URL is not available yet.");
+      alert("No meeting found for this course.");
     }
   };
+
+
+
 
   /**
    * -----------------------
@@ -508,7 +565,7 @@ const PersonalCourse = () => {
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-white">
       {/* SIDEBAR */}
-     <Aside/>
+      <Aside />
 
       {/* MAIN CONTENT */}
       <main className="flex-1 p-4 lg:p-6">
@@ -518,14 +575,20 @@ const PersonalCourse = () => {
         </h1>
 
         {/* Live Session Marquee */}
-        <marquee behavior="" direction="" className="text-red-800 bg-orange-100 p-2 mb-4">
-          <span
-            onClick={handleRedirect}
-            className="cursor-pointer text-blue-600 underline"
-          >
-            Click Here to join Live Session for {courseName}
-          </span>
-        </marquee>
+        {meetings.length > 0 && (
+          <Link to={`/${courseName}/meetings`}>
+            <div className="bg-orange-100 p-2 mb-4 rounded">
+
+              Click Here to join Live Session for {courseName}
+
+            </div>
+          </Link>
+        )}
+
+
+
+
+
 
         {/* Upcoming EMI Payments */}
         {upcomingEMIs.length > 0 && (
@@ -545,9 +608,8 @@ const PersonalCourse = () => {
                   </div>
                   <div className="text-right">
                     <p
-                      className={`text-lg ${
-                        emi.daysRemaining <= 3 ? "text-red-500" : "text-green-600"
-                      }`}
+                      className={`text-lg ${emi.daysRemaining <= 3 ? "text-red-500" : "text-green-600"
+                        }`}
                     >
                       {emi.daysRemaining} days left
                     </p>
@@ -567,154 +629,154 @@ const PersonalCourse = () => {
 
         {/* Top Row: Validity, Progress, Modules, Study Materials */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 px-2 md:px-6 mb-6">
-  {/* Subscription Validity (Paid Courses) */}
-  {courseType !== "free" && (
-    <div className="bg-pink-100 p-4 rounded-lg shadow-md flex flex-col items-center">
-      <h3 className="text-lg font-semibold text-red-600 mb-2">
-        Subscription Validity
-      </h3>
-      {typeof validityPercentage === "string" && validityPercentage === "Lifetime Access" ? (
-        <p className="text-center text-xl text-red-700">Lifetime Access</p>
-      ) : validityPercentage === "0" ? (
-        <p className="text-center text-xl text-red-700">Expired</p>
-      ) : (
-        <>
-          <div className="flex items-center justify-center" style={{ width: "140px", height: "140px" }}>
-            <PieChart
-              data={[
-                {
-                  title: "Remaining",
-                  value: parseInt(validityPercentage) || 0,
-                  color: "#FF5252",
-                },
-                {
-                  title: "Expired",
-                  value: 100 - (parseInt(validityPercentage) || 0),
-                  color: "#FCECEC", // a lighter shade of pink
-                },
-              ]}
-              lineWidth={25}
-              rounded
-              animate
-              style={{ height: "140px", width: "140px" }}
-              label={({ dataEntry }) => dataEntry.value > 0 ? `${dataEntry.value}%` : null}
-              labelStyle={{
-                fontSize: "10px",
-                fill: "#000",
-                fontWeight: "bold",
-                
-              }}
-              labelPosition={20}
-            />
-          </div>
-          <p className="text-center mt-2 text-red-700">
-            {validityPercentage || 0}% Validity Remaining
-          </p>
-        </>
-      )}
-    </div>
-  )}
+          {/* Subscription Validity (Paid Courses) */}
+          {courseType !== "free" && (
+            <div className="bg-pink-100 p-4 rounded-lg shadow-md flex flex-col items-center">
+              <h3 className="text-lg font-semibold text-red-600 mb-2">
+                Subscription Validity
+              </h3>
+              {typeof validityPercentage === "string" && validityPercentage === "Lifetime Access" ? (
+                <p className="text-center text-xl text-red-700">Lifetime Access</p>
+              ) : validityPercentage === "0" ? (
+                <p className="text-center text-xl text-red-700">Expired</p>
+              ) : (
+                <>
+                  <div className="flex items-center justify-center" style={{ width: "140px", height: "140px" }}>
+                    <PieChart
+                      data={[
+                        {
+                          title: "Remaining",
+                          value: parseInt(validityPercentage) || 0,
+                          color: "#FF5252",
+                        },
+                        {
+                          title: "Expired",
+                          value: 100 - (parseInt(validityPercentage) || 0),
+                          color: "#FCECEC", // a lighter shade of pink
+                        },
+                      ]}
+                      lineWidth={25}
+                      rounded
+                      animate
+                      style={{ height: "140px", width: "140px" }}
+                      label={({ dataEntry }) => dataEntry.value > 0 ? `${dataEntry.value}%` : null}
+                      labelStyle={{
+                        fontSize: "10px",
+                        fill: "#000",
+                        fontWeight: "bold",
 
-  {/* Course Progress */}
-  <div className="bg-pink-100 p-4 rounded-lg shadow-md flex flex-col items-center">
-    <h3 className="text-lg font-semibold text-red-600 mb-2">
-      Course Progress
-    </h3>
-    {courseType !== "free" ? (
-      <>
-        <div className="flex items-center justify-center" style={{ width: "140px", height: "140px" }}>
-          <PieChart
-            data={[
-              { title: "Watched", value: watchedPercentage, color: "#FF5252" },
-              { title: "Remaining", value: 100 - watchedPercentage, color: "#FCECEC" },
-            ]}
-            lineWidth={25}
-            rounded
-            animate
-            style={{ height: "140px", width: "140px" }}
-            label={({ dataEntry }) => dataEntry.value > 0 ? `${dataEntry.value}%` : null}
-            labelStyle={{
-              fontSize: "10px",
-              fill: "#000",
-              fontWeight: "bold",
-            }}
-            labelPosition={20}
-          />
+                      }}
+                      labelPosition={20}
+                    />
+                  </div>
+                  <p className="text-center mt-2 text-red-700">
+                    {validityPercentage || 0}% Validity Remaining
+                  </p>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Course Progress */}
+          <div className="bg-pink-100 p-4 rounded-lg shadow-md flex flex-col items-center">
+            <h3 className="text-lg font-semibold text-red-600 mb-2">
+              Course Progress
+            </h3>
+            {courseType !== "free" ? (
+              <>
+                <div className="flex items-center justify-center" style={{ width: "140px", height: "140px" }}>
+                  <PieChart
+                    data={[
+                      { title: "Watched", value: watchedPercentage, color: "#FF5252" },
+                      { title: "Remaining", value: 100 - watchedPercentage, color: "#FCECEC" },
+                    ]}
+                    lineWidth={25}
+                    rounded
+                    animate
+                    style={{ height: "140px", width: "140px" }}
+                    label={({ dataEntry }) => dataEntry.value > 0 ? `${dataEntry.value}%` : null}
+                    labelStyle={{
+                      fontSize: "10px",
+                      fill: "#000",
+                      fontWeight: "bold",
+                    }}
+                    labelPosition={20}
+                  />
+                </div>
+                <p className="text-center mt-2 text-red-700">
+                  {watchedVideos.length}/{totalVideos} Videos Watched ({watchedPercentage}%)
+                </p>
+              </>
+            ) : (
+              <p className="text-center text-red-700 mt-4">
+                Progress tracking is not available for free courses.
+              </p>
+            )}
+          </div>
+
+          {/* Modules Covered (Paid Courses) */}
+          {courseType !== "free" && totalModules > 0 && (
+            <div className="bg-pink-100 p-4 rounded-lg shadow-md flex flex-col items-center">
+              <h3 className="text-lg font-semibold text-red-600 mb-2">
+                Modules Covered
+              </h3>
+              <div className="flex items-center justify-center" style={{ width: "140px", height: "140px" }}>
+                <PieChart
+                  data={[
+                    { title: "Covered", value: modulesCovered, color: "#FF5252" },
+                    {
+                      title: "Remaining",
+                      value: totalModules - modulesCovered,
+                      color: "#FCECEC",
+                    },
+                  ]}
+                  lineWidth={25}
+                  rounded
+                  animate
+                  style={{ height: "140px", width: "140px" }}
+                  label={({ dataEntry }) => dataEntry.value > 0 ? `${dataEntry.value}%` : null}
+                  labelStyle={{
+                    fontSize: "10px",
+                    fill: "#000",
+                    fontWeight: "bold",
+                  }}
+                  labelPosition={20}
+                />
+              </div>
+              <p className="text-center mt-2 text-red-700">
+                {modulesCovered}/{totalModules} Modules Covered ({modulesCoveredPercentage}%)
+              </p>
+            </div>
+          )}
+
+          {/* Study Materials */}
+          {studyMaterials.length > 0 && (
+            <div className="bg-white p-4 rounded-lg shadow-md flex flex-col">
+              <h3 className="text-lg font-semibold text-center text-red-600 mb-2">
+                Study Materials
+              </h3>
+              <div className="space-y-2">
+                {studyMaterials.map((material) => (
+                  <div
+                    key={material.id}
+                    className="p-2 bg-gray-100 rounded shadow flex flex-col items-start"
+                  >
+                    <h4 className="text-gray-700 font-semibold mb-1">
+                      {material.title}
+                    </h4>
+                    <a
+                      href={material.url}
+                      download
+                      className="text-white bg-blue-500 px-4 py-1 rounded hover:bg-blue-600 text-sm"
+                    >
+                      Download
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-        <p className="text-center mt-2 text-red-700">
-          {watchedVideos.length}/{totalVideos} Videos Watched ({watchedPercentage}%)
-        </p>
-      </>
-    ) : (
-      <p className="text-center text-red-700 mt-4">
-        Progress tracking is not available for free courses.
-      </p>
-    )}
-  </div>
-
-  {/* Modules Covered (Paid Courses) */}
-  {courseType !== "free" && totalModules > 0 && (
-    <div className="bg-pink-100 p-4 rounded-lg shadow-md flex flex-col items-center">
-      <h3 className="text-lg font-semibold text-red-600 mb-2">
-        Modules Covered
-      </h3>
-      <div className="flex items-center justify-center" style={{ width: "140px", height: "140px" }}>
-        <PieChart
-          data={[
-            { title: "Covered", value: modulesCovered, color: "#FF5252" },
-            {
-              title: "Remaining",
-              value: totalModules - modulesCovered,
-              color: "#FCECEC",
-            },
-          ]}
-          lineWidth={25}
-          rounded
-          animate
-          style={{ height: "140px", width: "140px" }}
-          label={({ dataEntry }) => dataEntry.value > 0 ? `${dataEntry.value}%` : null}
-          labelStyle={{
-            fontSize: "10px",
-            fill: "#000",
-            fontWeight: "bold",
-          }}
-          labelPosition={20}
-        />
-      </div>
-      <p className="text-center mt-2 text-red-700">
-        {modulesCovered}/{totalModules} Modules Covered ({modulesCoveredPercentage}%)
-      </p>
-    </div>
-  )}
-
-  {/* Study Materials */}
-  {studyMaterials.length > 0 && (
-    <div className="bg-white p-4 rounded-lg shadow-md flex flex-col">
-      <h3 className="text-lg font-semibold text-center text-red-600 mb-2">
-        Study Materials
-      </h3>
-      <div className="space-y-2">
-        {studyMaterials.map((material) => (
-          <div
-            key={material.id}
-            className="p-2 bg-gray-100 rounded shadow flex flex-col items-start"
-          >
-            <h4 className="text-gray-700 font-semibold mb-1">
-              {material.title}
-            </h4>
-            <a
-              href={material.url}
-              download
-              className="text-white bg-blue-500 px-4 py-1 rounded hover:bg-blue-600 text-sm"
-            >
-              Download
-            </a>
-          </div>
-        ))}
-      </div>
-    </div>
-  )}
-</div>
 
 
         {/* COURSE VIDEOS */}
@@ -734,43 +796,44 @@ const PersonalCourse = () => {
                     <FaChevronLeft className="swiper-button-prev text-red-600 bg-white rounded-full p-1 shadow" />
                   </button>
                 </div>
-
-                <Swiper
-                  modules={[Navigation, Pagination]}
-                  navigation={{
-                    nextEl: ".swiper-button-next",
-                    prevEl: ".swiper-button-prev",
-                  }}
-                  pagination={{ clickable: true }}
-                  spaceBetween={10}
-                  slidesPerView={1}
-                  breakpoints={{
-                    640: { slidesPerView: 2 },
-                    1024: { slidesPerView: 4 },
-                  }}
-                  className="max-w-7xl "
-                >
-                  {groupedVideos[title].map((video) => (
-                    <SwiperSlide key={video.id} className="mb-8">
-                      <div className="bg-white shadow-md rounded-lg overflow-hidden transition-transform transform hover:scale-105 mb-6px">
-                        <Link to={`/course/${courseName}/video/${video.id}`}>
-                          <video
-                            src={video.url}
-                            controls
-                            className="w-full h-40 bg-black rounded"
-                            controlsList="nodownload"
-                            onEnded={() => handleMarkAsWatched(video.id)}
-                          />
-                          <div className="p-3">
-                            <p className="text-red-700 font-semibold text-sm truncate ">
-                              {video.description}
-                            </p>
-                          </div>
-                        </Link>
-                      </div>
-                    </SwiperSlide>
-                  ))}
-                </Swiper>
+                <div className="max-w-3xl ">
+                  <Swiper
+                    modules={[Navigation, Pagination]}
+                    navigation={{
+                      nextEl: ".swiper-button-next",
+                      prevEl: ".swiper-button-prev",
+                    }}
+                    pagination={{ clickable: true }}
+                    spaceBetween={10}
+                    slidesPerView={1}
+                    breakpoints={{
+                      640: { slidesPerView: 2 },
+                      1024: { slidesPerView: 3 },
+                    }}
+                    className="max-w-7xl "
+                  >
+                    {groupedVideos[title].map((video) => (
+                      <SwiperSlide key={video.id} className="mb-8">
+                        <div className="bg-white shadow-md rounded-lg overflow-hidden transition-transform transform hover:scale-105 mb-6px">
+                          <Link to={`/course/${courseName}/video/${video.id}`}>
+                            <video
+                              src={video.url}
+                              controls
+                              className="w-full h-40 bg-black rounded"
+                              controlsList="nodownload"
+                              onEnded={() => handleMarkAsWatched(video.id)}
+                            />
+                            <div className="p-3">
+                              <p className="text-red-700 font-semibold text-sm truncate ">
+                                {video.description}
+                              </p>
+                            </div>
+                          </Link>
+                        </div>
+                      </SwiperSlide>
+                    ))}
+                  </Swiper>
+                </div>
 
                 {/* Right Nav */}
                 <div className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10">
@@ -783,15 +846,16 @@ const PersonalCourse = () => {
           ))}
         </div>
 
+
         {/* Q&A SECTION */}
         <div className="px-2 md:px-6 mb-8">
           <QandASection courseName={courseName} />
         </div>
 
-       
+
       </main>
-</div>
- 
+    </div>
+
   );
 };
 

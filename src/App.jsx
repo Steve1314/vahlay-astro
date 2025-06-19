@@ -87,6 +87,7 @@ import AdminTitleArrange from "./components/pages/AdminTitleArrange";
 import PageNotFound from "./components/pages/PageNotFound";
 import Tracker from "./components/pages/Tracker";
 import Dashboard from "./components/pages/Dashboard";
+import Meetings from "./components/pages/Meetings"
 
 const App = () => {
   return (
@@ -108,6 +109,7 @@ const App = () => {
             <Route path="/appointment" element={<Appointment />} />
             <Route path="/newuser" element={<NewUser />} />
             <Route path="/olduser" element={<OldUser />} />
+            <Route path="/:courseName/meetings" element={<Meetings />} />
             <Route
               path="/submission-success"
               element={
@@ -183,7 +185,7 @@ const App = () => {
               element={
                 <ProtectedRoutes>
                   {" "}
-                  <Dashboard/>{" "}
+                  <Dashboard />{" "}
                 </ProtectedRoutes>
               }
             />
@@ -192,7 +194,7 @@ const App = () => {
               element={
                 <ProtectedRoutes>
                   {" "}
-                  <Aside/>{" "}
+                  <Aside />{" "}
                 </ProtectedRoutes>
               }
             />
@@ -209,6 +211,14 @@ const App = () => {
               element={
                 <ProtectedRoutes>
                   <EnrolledCourses />
+                </ProtectedRoutes>
+              }
+            />
+            <Route
+              path="/admin/addmeeting"
+              element={
+                <ProtectedRoutes adminOnly={true}>
+                  <AddMeeting />
                 </ProtectedRoutes>
               }
             />

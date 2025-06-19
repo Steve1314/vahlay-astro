@@ -34,14 +34,22 @@ const HeroSection = () => {
           type: "paid",
         }));
 
-        // Combine and sort courses to display paid courses first
         const combinedCourses = [...paidCourses, ...freeCourses];
 
-      const orderDoc = await getDoc(doc(db, "courseOrder", "displayOrder"));
+        const orderDoc = await getDoc(doc(db, "courseOrder", "displayOrder"));
         if (orderDoc.exists()) {
           const orderedIds = orderDoc.data().order;
-          const sortedCourses = orderedIds.map(id => combinedCourses.find(c => c.id === id)).filter(c => c);
-          setCourses(sortedCourses);
+          const orderedCourses = orderedIds
+            .map(id => combinedCourses.find(c => c.id === id))
+            .filter(c => c); // only keep found courses
+
+          // Find remaining courses not in the order list
+          const remainingCourses = combinedCourses.filter(c => !orderedIds.includes(c.id));
+
+          // Combine both ordered and remaining courses
+          const finalCourses = [...orderedCourses, ...remainingCourses];
+
+          setCourses(finalCourses);
         } else {
           setCourses(combinedCourses);
         }
@@ -51,19 +59,20 @@ const HeroSection = () => {
       }
     };
 
+
     fetchCourses();
 
     return () => unsubscribe();
   }, []);
 
-  
+
   const handleCourseClick = async (course) => {
     if (!user) {
       navigate("/login");
       return;
     }
 
-    
+
 
     try {
       const subscriptionSnap = await getDoc(doc(db, "subscriptions", user.email));
@@ -79,13 +88,13 @@ const HeroSection = () => {
           course.type === "free"
             ? enrolledCourses.includes(course.title)
             : enrolledCourses.some(
-                (details) =>
-                  details[course.title]?.status === "active" &&
-                  new Date(details[course.title]?.expiryDate) > new Date()
-              );
+              (details) =>
+                details[course.title]?.status === "active" &&
+                new Date(details[course.title]?.expiryDate) > new Date()
+            );
 
         if (isEnrolled) {
-          navigate("/dashboard");
+          navigate("/enrolledcourse");
         } else {
           navigate(`/coursedetail/${course.id}/${course.type}`, {
             state: { courseId: course.id, courseType: course.type },
@@ -138,7 +147,7 @@ const HeroSection = () => {
               }}
             >
               <div className="mb-4">
-              <div className="absolute top-0 left-2 m-2  rounded-full shadow-lg flex items-center justify-center">
+                <div className="absolute top-0 left-2 m-2  rounded-full shadow-lg flex items-center justify-center">
                   <img
                     src="/assets/vahlay_astro.png"
                     alt="logo"
@@ -159,13 +168,13 @@ const HeroSection = () => {
                   {course.Subtitle || "Untitled Course"}
                 </p>
                 {course.type === "free" ? (
-                   <Link to={`/enrollfree/${course.id}/${course.type}`} className="block text-center text-white bg-red-600 font-medium py-2 rounded-lg hover:bg-red-700 transition">
-                   Enroll Now →
-                 </Link>
+                  <Link to={`/enrollfree/${course.id}/${course.type}`} className="block text-center text-white bg-red-600 font-medium py-2 rounded-lg hover:bg-red-700 transition">
+                    Enroll Now →
+                  </Link>
                 ) : course.type === "paid" ? (
                   <Link to={`/enroll/${course.id}/${course.type}`} className="block text-center text-white bg-red-600 font-medium py-2 rounded-lg hover:bg-red-700 transition">
-                  Enroll Now →
-                </Link>
+                    Enroll Now →
+                  </Link>
                 ) : (
                   <p className="text-center text-red-500 font-semibold">Unknown Course Type</p>
                 )}

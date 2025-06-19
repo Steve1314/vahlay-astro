@@ -145,42 +145,45 @@ const Home = () => {
     });
 
     const fetchCourses = async () => {
-      try {
-        // Fetch free and paid courses
-        const freeCoursesSnapshot = await getDocs(collection(db, "freeCourses"));
-        const freeCourses = freeCoursesSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-          type: "free",
-        }));
-
-        const paidCoursesSnapshot = await getDocs(collection(db, "paidCourses"));
-        const paidCourses = paidCoursesSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-          type: "paid",
-        }));
-
-        // Combine and sort the courses
-        const combinedCourses = [...paidCourses, ...freeCourses];
-
-        // Get custom order of courses from Firestore (if available)
-        const orderDoc = await getDoc(doc(db, "courseOrder", "displayOrder"));
-        if (orderDoc.exists()) {
-          const orderedIds = orderDoc.data().order; // Array of course IDs in the desired order
-          const sortedCourses = orderedIds
-            .map((id) => combinedCourses.find((course) => course.id === id))
-            .filter((course) => course);
-          setCourses(sortedCourses);
-        } else {
-          setCourses(combinedCourses); // Default order if no custom order found
-        }
-      } catch (error) {
-        console.error("Error fetching courses:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+         try {
+           const freeCoursesSnapshot = await getDocs(collection(db, "freeCourses"));
+           const freeCourses = freeCoursesSnapshot.docs.map((doc) => ({
+             id: doc.id,
+             ...doc.data(),
+             type: "free",
+           }));
+   
+           const paidCoursesSnapshot = await getDocs(collection(db, "paidCourses"));
+           const paidCourses = paidCoursesSnapshot.docs.map((doc) => ({
+             id: doc.id,
+             ...doc.data(),
+             type: "paid",
+           }));
+   
+           const combinedCourses = [...paidCourses, ...freeCourses];
+   
+           const orderDoc = await getDoc(doc(db, "courseOrder", "displayOrder"));
+           if (orderDoc.exists()) {
+             const orderedIds = orderDoc.data().order;
+             const orderedCourses = orderedIds
+               .map(id => combinedCourses.find(c => c.id === id))
+               .filter(c => c); // only keep found courses
+   
+             // Find remaining courses not in the order list
+             const remainingCourses = combinedCourses.filter(c => !orderedIds.includes(c.id));
+   
+             // Combine both ordered and remaining courses
+             const finalCourses = [...orderedCourses, ...remainingCourses];
+   
+             setCourses(finalCourses);
+           } else {
+             setCourses(combinedCourses);
+           }
+         } catch (error) {
+           console.error("Error fetching courses:", error);
+           alert("Failed to fetch courses. Please try again later.");
+         }
+       };
 
     fetchCourses();
     return () => unsubscribe();
@@ -234,7 +237,7 @@ const Home = () => {
               );
 
         if (isEnrolled) {
-          navigate("/dashboard");
+          navigate("/enrolledcourse");
         } else {
           navigate(`/coursedetail/${course.id}/${course.type}`, {
             state: { courseId: course.id, courseType: course.type },
