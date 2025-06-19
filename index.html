@@ -1,41 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <link rel="icon" type="image/png" href="/assets/Astro_logos-navbar.png" />
-    <title>Vahlay Astro</title> <!-- Update this line -->
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-    <script src="https://www.google.com/recaptcha/api.js?render=6Lf1iqAqAAAAACbRyvyYhwO1wmhv6SCIF5-mYpXc"></script>
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-    <script src="https://www.paypal.com/sdk/js?client-id=AQiM7cHIWwgSyw0DyJK0y3mw3azikbiPj0PvQJfKZzLG2nBgUgxcfi0U_BhLJ7-_UPrF-olrhn37ekVj&currency=USD"></script>
 
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <link rel="icon" type="image/png" href="/assets/Astro_logos-navbar.png" />
+  <title>Vahlay Astro</title> <!-- Update this line -->
+</head>
 
-    <div id="root"></div>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="https://www.google.com/recaptcha/api.js?render=6Lf1iqAqAAAAACbRyvyYhwO1wmhv6SCIF5-mYpXc"></script>
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+  <script
+    src="https://www.paypal.com/sdk/js?client-id=AQiM7cHIWwgSyw0DyJK0y3mw3azikbiPj0PvQJfKZzLG2nBgUgxcfi0U_BhLJ7-_UPrF-olrhn37ekVj&currency=USD"></script>
+  <!-- <script src="https://cdn.srv.whereby.com/embed/v2-embed.js" type="module"></script> -->
 
-    <!-- Google Translate Element -->
-    <div id="google_translate_element"></div>
+  <div id="root"></div>
 
-    <!-- Load Google Translate Script -->
-    <script type="text/javascript">
-        function googleTranslateElementInit() {
-            new google.translate.TranslateElement(
-                {
-                    pageLanguage: "en",
-                    includedLanguages: "fr,de,es,zh,hi,ar,ja,ru,pt,ko", // Add desired languages
-                    layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
-                    autoDisplay: false
-                },
-                "google_translate_element"
-            );
-        }
-    </script>
-    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+  <!-- Google Translate Element -->
+  <div id="google_translate_element"></div>
 
-  </body>
+  <!-- Load Google Translate Script -->
+  <script type="text/javascript">
+    function googleTranslateElementInit() {
+      new google.translate.TranslateElement(
+        {
+          pageLanguage: "en",
+          includedLanguages: "fr,de,es,zh,hi,ar,ja,ru,pt,ko", // Add desired languages
+          layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+          autoDisplay: false
+        },
+        "google_translate_element"
+      );
+    }
+  </script>
+  <script type="text/javascript"
+    src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+</body>
+
 </html>
