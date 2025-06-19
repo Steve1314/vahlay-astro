@@ -138,6 +138,13 @@ const HeroSection = () => {
               }}
             >
               <div className="mb-4">
+              <div className="absolute top-0 left-2 m-2  rounded-full shadow-lg flex items-center justify-center">
+                  <img
+                    src="/assets/vahlay_astro.png"
+                    alt="logo"
+                    className=" w-14 h-14  bg-white object-contain rounded-full"
+                  />
+                </div>
                 <img
                   src={course.imageUrl}
                   alt={course.title}

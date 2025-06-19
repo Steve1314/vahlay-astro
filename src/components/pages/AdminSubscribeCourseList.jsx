@@ -1,753 +1,438 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../../firebaseConfig";
-import { collection, onSnapshot, doc, updateDoc, Timestamp, setDoc } from "firebase/firestore";
+import {
+  collection,
+  onSnapshot,
+  doc,
+  updateDoc,
+  setDoc,
+} from "firebase/firestore";
 import Admin from "./Admin";
+import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
 
 const AdminEnrolledUsers = () => {
   const [subscriptions, setSubscriptions] = useState([]);
-  const [expandedUser, setExpandedUser] = useState(null);
-  const [expandedSection, setExpandedSection] = useState(null);
+  const [expend, setExpend] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
   const [courses, setCourses] = useState([]);
+  const [freeCourses, setFreeCourses] = useState([]);
+  const [allCourses, setAllCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
-  // Paid course editing states
-  const [editingCourseData, setEditingCourseData] = useState({
-    userId: null,
-    oldCourseName: '',
-    newCourseName: '',
-    subscriptionDate: '',
-    expiryDate: ''
-  });
-
-  // Free course editing states
-  const [editingFreeCourse, setEditingFreeCourse] = useState({
-    userId: null,
-    index: null,
-    newCourseName: ''
-  });
-
+  const today = new Date().toISOString().split("T")[0];
+  const expiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
 
   const [newSubscriber, setNewSubscriber] = useState({
-    userId: '',
-    course: '',
-    courseType: 'paid',
-    status: 'active',
-    subscriptionDate: new Date().toISOString().split('T')[0],
-    expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    userId: "",
+    course: "",
+    courseType: "paid",
+    status: "active",
+    subscriptionDate: today,
+    expiryDate: expiry,
   });
-  const [freeCourses, setFreeCourses] = useState([]);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
-
-
-  // useEffect(() => {
-  //   const coursesCollection = collection(db, 'paidCourses');
-  //   const unsubscribe = onSnapshot(coursesCollection, (snapshot) => {
-  //     const coursesData = snapshot.docs.map(doc => ({ id: doc.id }));
-  //     setCourses(coursesData);
-  //   });
-  //   return () => unsubscribe();
-  // }, []);
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, "subscriptions"), (snapshot) => {
-      const updatedSubscriptions = snapshot.docs.map((doc) => ({
+    const unsub1 = onSnapshot(collection(db, "paidCourses"), (snapshot) => {
+      const paid = snapshot.docs.map((doc) => ({ id: doc.id, type: "paid" }));
+      paid.sort((a, b) => a.id.localeCompare(b.id));
+      setCourses(paid);
+      setAllCourses((prev) => {
+        const free = prev.filter((c) => c.type === "free");
+        return [...free, ...paid];
+      });
+    });
+
+    const unsub2 = onSnapshot(collection(db, "freeCourses"), (snapshot) => {
+      const free = snapshot.docs.map((doc) => ({ id: doc.id, type: "free" }));
+      free.sort((a, b) => a.id.localeCompare(b.id));
+      setFreeCourses(free.map((f) => f.id));
+      setAllCourses((prev) => {
+        const paid = prev.filter((c) => c.type === "paid");
+        return [...paid, ...free];
+      });
+    });
+
+    const unsub3 = onSnapshot(collection(db, "subscriptions"), (snapshot) => {
+      const updated = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-      setSubscriptions(updatedSubscriptions);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const calculateDaysLeft = (expiryDate) => {
-    const today = new Date();
-    const expiry = expiryDate instanceof Timestamp ? expiryDate.toDate() : new Date(expiryDate);
-    const difference = expiry - today;
-    return Math.max(Math.ceil(difference / (1000 * 60 * 60 * 24)), 0);
-  };
-
-
-
-  useEffect(() => {
-    // Fetch paid courses
-    const coursesCollection = collection(db, 'paidCourses');
-    const unsubscribePaid = onSnapshot(coursesCollection, (snapshot) => {
-      const coursesData = snapshot.docs.map(doc => ({ id: doc.id }));
-      setCourses(coursesData);
-    });
-
-    // Fetch free courses
-    const freeCoursesCollection = collection(db, 'freeCourses');
-    const unsubscribeFree = onSnapshot(freeCoursesCollection, (snapshot) => {
-      const freeCoursesData = snapshot.docs.map(doc => doc.id);
-      setFreeCourses(freeCoursesData);
-    });
-
-    // Fetch subscriptions
-    const unsubscribeSubscriptions = onSnapshot(collection(db, "subscriptions"), (snapshot) => {
-      const updatedSubscriptions = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setSubscriptions(updatedSubscriptions);
+      setSubscriptions(updated);
     });
 
     return () => {
-      unsubscribePaid();
-      unsubscribeFree();
-      unsubscribeSubscriptions();
+      unsub1();
+      unsub2();
+      unsub3();
     };
   }, []);
 
   const handleAddSubscriber = async (e) => {
     e.preventDefault();
-    setErrorMessage('');
-    setSuccessMessage('');
+    setErrorMessage("");
+    setSuccessMessage("");
 
     try {
       const userRef = doc(db, "subscriptions", newSubscriber.userId);
-      const existingUser = subscriptions.find(sub => sub.id === newSubscriber.userId);
+      const existingUser = subscriptions.find(
+        (sub) => sub.id === newSubscriber.userId
+      );
 
-      if (newSubscriber.courseType === 'paid') {
-        const existingDetails = existingUser?.DETAILS ? [...existingUser.DETAILS] : [];
+      if (newSubscriber.courseType === "paid") {
+        const existingDetails = existingUser?.DETAILS || [];
+        const courseKey = newSubscriber.course;
 
-        console.log("Existing Details Before Update:", existingDetails);
+        const alreadyExists = existingDetails.some(
+          (detail) => detail[courseKey]
+        );
 
-        const newCourseEntry = {
-          [newSubscriber.course]: {
-            subscriptionDate: new Date(newSubscriber.subscriptionDate).toISOString(), // Store as ISO string
-            expiryDate: new Date(newSubscriber.expiryDate).toISOString(), // Store as ISO string
-            status: newSubscriber.status
-          }
-        };
-
-        console.log("New Course Entry:", newCourseEntry);
-
-        await setDoc(userRef, {
-          DETAILS: [...existingDetails, newCourseEntry]
-        }, { merge: true });
-
-      } else {
-        const existingFreeCourses = existingUser?.freecourses ? [...existingUser.freecourses] : [];
-        if (!existingFreeCourses.includes(newSubscriber.course)) {
-          existingFreeCourses.push(newSubscriber.course);
+        if (alreadyExists) {
+          setErrorMessage("User already subscribed to this course.");
+          return;
         }
 
-        await setDoc(userRef, {
-          freecourses: existingFreeCourses
-        }, { merge: true });
-      }
-
-      console.log("Updated Firestore Document:", newSubscriber.userId);
-
-      setSuccessMessage('Subscriber added successfully!');
-      setNewSubscriber({
-        userId: '',
-        course: '',
-        courseType: 'paid',
-        status: 'active',
-        subscriptionDate: new Date().toISOString().split('T')[0],
-        expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-      });
-    } catch (error) {
-      setErrorMessage('Error adding subscriber: ' + error.message);
-      console.error("Firestore Error:", error);
-    }
-  };
-
-
-
-
-  const formatDate = (date) => {
-    if (date instanceof Timestamp) {
-      return date.toDate().toLocaleDateString();
-    }
-    return new Date(date).toLocaleDateString();
-  };
-
-  const toggleUserDetails = (userId) => {
-    setExpandedUser((prevUserId) => (prevUserId === userId ? null : userId));
-  };
-
-  const toggleSection = (section) => {
-    setExpandedSection((prevSection) => (prevSection === section ? null : section));
-  };
-
-  const handleUpdateCourse = async () => {
-    const { userId, oldCourseName, newCourseName, subscriptionDate, expiryDate } = editingCourseData;
-    const userRef = doc(db, "subscriptions", userId);
-    const userSub = subscriptions.find(sub => sub.id === userId);
-
-    if (!userSub || !userSub.DETAILS) return;
-
-    console.log("Before Update - Existing Details:", userSub.DETAILS);
-
-    const updatedDetails = userSub.DETAILS.map(course => {
-      const currentCourseName = Object.keys(course)[0];
-      if (currentCourseName === oldCourseName) {
-        return {
-          [newCourseName]: {
-            subscriptionDate: new Date(subscriptionDate).toISOString(), // Ensure ISO format
-            expiryDate: new Date(expiryDate).toISOString(), // Ensure ISO format
-            status: course[oldCourseName]?.status || "active" // Preserve status
-          }
+        const newEntry = {
+          [courseKey]: {
+            subscriptionDate: new Date(
+              newSubscriber.subscriptionDate
+            ).toISOString(),
+            expiryDate: new Date(newSubscriber.expiryDate).toISOString(),
+            status: newSubscriber.status,
+          },
         };
+
+        await setDoc(
+          userRef,
+          { DETAILS: [...existingDetails, newEntry] },
+          { merge: true }
+        );
+      } else {
+        const existingFree = existingUser?.freecourses || [];
+        if (!existingFree.includes(newSubscriber.course)) {
+          existingFree.push(newSubscriber.course);
+        }
+        await setDoc(userRef, { freecourses: existingFree }, { merge: true });
       }
-      return course;
-    });
 
-    console.log("After Update - New Details:", updatedDetails);
-
-    await updateDoc(userRef, { DETAILS: updatedDetails });
-
-    setEditingCourseData({
-      userId: null,
-      oldCourseName: '',
-      newCourseName: '',
-      subscriptionDate: '',
-      expiryDate: ''
-    });
+      setSuccessMessage("Subscriber added successfully!");
+      setNewSubscriber({
+        userId: "",
+        course: "",
+        courseType: "paid",
+        status: "active",
+        subscriptionDate: today,
+        expiryDate: expiry,
+      });
+    } catch (err) {
+      setErrorMessage("Error adding subscriber: " + err.message);
+    }
   };
 
-
-  const handleUpdateFreeCourse = async () => {
-    const { userId, index, newCourseName } = editingFreeCourse;
-    if (!newCourseName.trim()) return;
-
+  const handleDeleteCourse = async (userId, courseName) => {
     const userRef = doc(db, "subscriptions", userId);
-    const userSub = subscriptions.find(sub => sub.id === userId);
-    const updatedFreeCourses = [...userSub.freecourses];
-    updatedFreeCourses[index] = newCourseName.trim();
+    const userSub = subscriptions.find((sub) => sub.id === userId);
 
-    await updateDoc(userRef, { freecourses: updatedFreeCourses });
-    setEditingFreeCourse({ userId: null, index: null, newCourseName: '' });
+    if (!userSub || !courseName) return;
+
+    if (
+      window.confirm(
+        `Are you sure you want to remove "${courseName}" for user "${userId}"?`
+      )
+    ) {
+      if (userSub.DETAILS?.some((d) => Object.keys(d)[0] === courseName)) {
+        const updated = userSub.DETAILS.filter(
+          (d) => Object.keys(d)[0] !== courseName
+        );
+        await updateDoc(userRef, { DETAILS: updated });
+      }
+
+      if (userSub.freecourses?.includes(courseName)) {
+        const updatedFree = userSub.freecourses.filter((c) => c !== courseName);
+        await updateDoc(userRef, { freecourses: updatedFree });
+      }
+    }
   };
 
-  const deleteCourse = async (userId, courseName) => {
-    const userRef = doc(db, "subscriptions", userId);
-    const updatedDetails = subscriptions
-      .find((sub) => sub.id === userId)
-      .DETAILS.filter((course) => Object.keys(course)[0] !== courseName);
+  const filteredSubscribers =
+    selectedCourse !== ""
+      ? subscriptions.filter((sub) => {
+          const paid = sub.DETAILS?.map((c) => Object.keys(c)[0]) || [];
+          const free = sub.freecourses || [];
+          return paid.includes(selectedCourse) || free.includes(selectedCourse);
+        })
+      : subscriptions;
 
-    await updateDoc(userRef, { DETAILS: updatedDetails });
+  const handleExpand = () => {
+    setExpend(!expend);
   };
-
-  // Categorizing Users with proper length checks
-  const paidUsers = subscriptions.filter((sub) =>
-    sub.DETAILS?.length > 0 && !sub.freecourses?.length
-  );
-  const freeUsers = subscriptions.filter((sub) =>
-    sub.freecourses?.length > 0 && !sub.DETAILS?.length
-  );
-  const bothUsers = subscriptions.filter((sub) =>
-    sub.DETAILS?.length > 0 && sub.freecourses?.length > 0
-  );
 
   return (
-    <div className="flex flex-row md:flex-row min-h-screen bg-white">
-      <div className="w-full md:w-1/4 bg-white shadow-md">
+    <div className="flex flex-row md:flex-row min-h-screen bg-white ">
+      <div className="bg-white shadow-md">
         <Admin />
       </div>
 
-      <div>
-        {/* Add Subscriber Section */}
-        <section className="mb-8 bg-gray-50 p-6 rounded-lg shadow-md">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Add New Subscriber</h2>
-          <form onSubmit={handleAddSubscriber} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Email ID</label>
-                <input
-                  type="text"
-                  required
-                  value={newSubscriber.userId}
-                  onChange={(e) => setNewSubscriber({ ...newSubscriber, userId: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Course Type</label>
-                <select
-                  value={newSubscriber.courseType}
-                  onChange={(e) => setNewSubscriber({ ...newSubscriber, courseType: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
-                >
-                  <option value="paid">Paid Course</option>
-                  <option value="free">Free Course</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  {newSubscriber.courseType === 'paid' ? 'Paid Course' : 'Free Course'}
-                </label>
-                <select
-                  required
-                  value={newSubscriber.course}
-                  onChange={(e) => setNewSubscriber({ ...newSubscriber, course: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
-                >
-                  <option value="">Select Course</option>
-                  {newSubscriber.courseType === 'paid'
-                    ? courses.map(course => (
-                      <option key={course.id} value={course.id}>{course.id}</option>
-                    ))
-                    : freeCourses.map(course => (
-                      <option key={course} value={course}>{course}</option>
-                    ))}
-                </select>
-              </div>
-            </div>
-
-            {errorMessage && <p className="text-red-600 text-sm">{errorMessage}</p>}
-            {successMessage && <p className="text-red-600 text-sm">{successMessage}</p>}
-
-            <button
-              type="submit"
-              className="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-            >
-              Add Subscriber
+      <div className="pt-16 flex flex-col items-center w-full">
+        <div className="mb-8 bg-gray-50 p-6 rounded-lg shadow-md w-full md:w-4/5 ">
+          <h2 className="text-2xl font-bold text-red-600 flex justify-between mb-4">
+            Add New Subscriber
+            <button onClick={handleExpand} className="text-xl transition-all  ">
+              {expend ? <IoIosArrowUp /> : <IoIosArrowDown />}
             </button>
-          </form>
-        </section>
+          </h2>
+          {expend && (
+            <form
+              onSubmit={handleAddSubscriber}
+              className="space-y-4 transition-all duration-300 "
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4  ">
+                {/* Email/User ID Field */}
+                <div>
+                  <label
+                    htmlFor="userId"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Email/User ID
+                  </label>
+                  <input
+                    id="userId"
+                    type="text"
+                    required
+                    placeholder="Email/User ID"
+                    value={newSubscriber.userId}
+                    onChange={(e) =>
+                      setNewSubscriber({
+                        ...newSubscriber,
+                        userId: e.target.value,
+                      })
+                    }
+                    className="block p-2 w-full rounded-md border-gray-300 shadow-sm"
+                  />
+                </div>
 
+                {/* Course Type Selection */}
+                <div>
+                  <label
+                    htmlFor="courseType"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Course Type
+                  </label>
+                  <select
+                    id="courseType"
+                    value={newSubscriber.courseType}
+                    onChange={(e) =>
+                      setNewSubscriber({
+                        ...newSubscriber,
+                        courseType: e.target.value,
+                      })
+                    }
+                    className="block p-2 w-full rounded-md border-gray-300 shadow-sm"
+                  >
+                    <option value="paid">Paid Course</option>
+                    <option value="free">Free Course</option>
+                  </select>
+                </div>
 
-        <div className="w-full md:w-3/4 px-4 sm:px-6 py-8 mx-auto">
-          <h1 className="text-3xl font-bold text-red-600 mb-6 text-center">
+                {/* Course Selection */}
+                <div>
+                  <label
+                    htmlFor="course"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Course
+                  </label>
+                  <select
+                    id="course"
+                    required
+                    value={newSubscriber.course}
+                    onChange={(e) =>
+                      setNewSubscriber({
+                        ...newSubscriber,
+                        course: e.target.value,
+                      })
+                    }
+                    className="block w-full rounded-md p-2 border-gray-300 shadow-sm"
+                  >
+                    <option value="">Select Course</option>
+                    {newSubscriber.courseType === "paid"
+                      ? courses.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.id}
+                          </option>
+                        ))
+                      : freeCourses.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Error and Success Messages */}
+              {errorMessage && (
+                <p className="text-red-600 text-sm">{errorMessage}</p>
+              )}
+              {successMessage && (
+                <p className="text-green-600 text-sm">{successMessage}</p>
+              )}
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                className="w-full bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+              >
+                Add Subscriber
+              </button>
+            </form>
+          )}
+        </div>
+
+        <div className="w-full md:w-4/5 ">
+          <h1 className="text-3xl font-bold text-red-600 mb-4 text-center ">
             Enrolled Users
           </h1>
 
-          {/* Users Subscribed to Both */}
-          <section className="mb-8 w-full">
-            <div
-              className="cursor-pointer flex justify-between items-center bg-red-600 text-white p-3 rounded-lg w-full"
-              onClick={() => toggleSection("both")}
+          <div className="mb-6 max-w-auto">
+            <label className="block mb-2 font-medium text-gray-700">
+              Filter by Course
+            </label>
+            <select
+              value={selectedCourse}
+              onChange={(e) => setSelectedCourse(e.target.value)}
+              className="p-2 w-full border border-gray-300 rounded"
             >
-              <h2 className="text-lg md:text-xl font-bold">Users Subscribed to Both</h2>
-              <span>{expandedSection === "both" ? "▲" : "▼"}</span>
-            </div>
-            {expandedSection === "both" && (
-              <ul className="mt-4 space-y-4 w-full">
-                {bothUsers.map((user, index) => (
-                  <li key={user.id} className="border border-gray-300 rounded-lg p-4 bg-white shadow-md w-full">
-                    <div className="flex justify-between items-center cursor-pointer" onClick={() => toggleUserDetails(user.id)}>
-                      <h2 className="text-sm md:text-lg font-semibold text-red-600">
-                        {index + 1}. {user.id}
-                      </h2>
-                      <button className="text-gray-600 hover:text-red-600 text-sm md:text-base">
-                        {expandedUser === user.id ? "Hide Details" : "Show Details"}
-                      </button>
-                    </div>
+              <option value="">All Courses</option>
+              {allCourses.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.id}
+                </option>
+              ))}
+            </select>
+          </div>
 
-                    {expandedUser === user.id && (
-                      <div className="mt-4 space-y-2">
-                        {/* Paid Courses */}
-                        {user.DETAILS?.map((course, idx) => {
-                          const courseName = Object.keys(course)[0];
-                          const isEditing = editingCourseData.userId === user.id &&
-                            editingCourseData.oldCourseName === courseName;
-
-                          return (
-                            <div key={idx} className="border-t border-gray-200 pt-2 text-gray-700 text-sm">
-                              {!isEditing ? (
-                                <>
-                                  <p><span className="font-medium">Course:</span> {courseName}</p>
-                                  <p><span className="font-medium">Subscription Date:</span>
-                                    {formatDate(course[courseName].subscriptionDate)}
-                                  </p>
-                                  <p><span className="font-medium">Expiry Date:</span>
-                                    {formatDate(course[courseName].expiryDate)}
-                                  </p>
-                                  <p><span className="font-medium">Days Left:</span>
-                                    {calculateDaysLeft(course[courseName].expiryDate)}
-                                  </p>
-                                  <div className="mt-2">
-                                    <button
-                                      className="text-white bg-red-600 px-3 py-1 rounded-lg"
-                                      onClick={() => deleteCourse(user.id, courseName)}
-                                    >
-                                      Delete
-                                    </button>
-                                    <button
-                                      className="ml-2 text-white bg-red-600 px-3 py-1 rounded-lg"
-                                      onClick={() => {
-                                        const courseData = course[courseName];
-                                        const getDateValue = (date) => {
-                                          if (date instanceof Timestamp) {
-                                            return date.toDate().toISOString().split('T')[0];
-                                          }
-                                          return new Date(date).toISOString().split('T')[0];
-                                        };
-
-                                        setEditingCourseData({
-                                          userId: user.id,
-                                          oldCourseName: courseName,
-                                          newCourseName: courseName,
-                                          subscriptionDate: getDateValue(courseData.subscriptionDate),
-                                          expiryDate: getDateValue(courseData.expiryDate)
-                                        });
-                                      }}
-                                    >
-                                      Edit
-                                    </button>
-                                  </div>
-                                </>
-                              ) : (
-                                <div className="mt-2 space-y-2">
-                                  <select
-                                    value={editingCourseData.newCourseName}
-                                    onChange={(e) => setEditingCourseData(prev => ({
-                                      ...prev,
-                                      newCourseName: e.target.value
-                                    }))}
-                                    className="border p-2 rounded w-full"
-                                  >
-                                    {courses.map((course) => (
-                                      <option key={course.id} value={course.id}>
-                                        {course.id}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  <input
-                                    type="date"
-                                    value={editingCourseData.subscriptionDate}
-                                    onChange={(e) => setEditingCourseData(prev => ({
-                                      ...prev,
-                                      subscriptionDate: e.target.value
-                                    }))}
-                                    className="border p-2 rounded w-full"
-                                  />
-                                  <input
-                                    type="date"
-                                    value={editingCourseData.expiryDate}
-                                    onChange={(e) => setEditingCourseData(prev => ({
-                                      ...prev,
-                                      expiryDate: e.target.value
-                                    }))}
-                                    className="border p-2 rounded w-full"
-                                  />
-                                  <div className="flex space-x-2 mt-2">
-                                    <button
-                                      className="bg-red-600 text-white px-4 py-2 rounded-lg"
-                                      onClick={handleUpdateCourse}
-                                    >
-                                      Save
-                                    </button>
-                                    <button
-                                      className="bg-gray-600 text-white px-4 py-2 rounded-lg"
-                                      onClick={() => setEditingCourseData({
-                                        userId: null,
-                                        oldCourseName: '',
-                                        newCourseName: '',
-                                        subscriptionDate: '',
-                                        expiryDate: ''
-                                      })}
-                                    >
-                                      Cancel
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-
-                        {/* Free Courses - Correctly nested */}
-                        {user.freecourses?.length > 0 && (
-                          <div>
-                            <h3 className="font-bold text-gray-800 mt-4">Free Courses:</h3>
-                            <ul className="list-disc list-inside text-gray-700">
-                              {user.freecourses.map((course, idx) => {
-                                const isEditing = editingFreeCourse.userId === user.id &&
-                                  editingFreeCourse.index === idx;
-
-                                return (
-                                  <li key={idx} className="mt-1">
-                                    {!isEditing ? (
-                                      <div className="flex items-center">
-                                        <span>{course}</span>
-                                        <button
-                                          className="ml-2 text-red-600 text-sm"
-                                          onClick={() => setEditingFreeCourse({
-                                            userId: user.id,
-                                            index: idx,
-                                            newCourseName: course
-                                          })}
-                                        >
-                                          Edit
-                                        </button>
-                                      </div>
-                                    ) : (
-                                      <div className="flex items-center space-x-2">
-                                        <input
-                                          type="text"
-                                          value={editingFreeCourse.newCourseName}
-                                          onChange={(e) => setEditingFreeCourse(prev => ({
-                                            ...prev,
-                                            newCourseName: e.target.value
-                                          }))}
-                                          className="border p-1 rounded flex-1"
-                                        />
-                                        <button
-                                          className="bg-red-600 text-white px-2 py-1 rounded text-sm"
-                                          onClick={handleUpdateFreeCourse}
-                                        >
-                                          Save
-                                        </button>
-                                        <button
-                                          className="bg-gray-600 text-white px-2 py-1 rounded text-sm"
-                                          onClick={() => setEditingFreeCourse({
-                                            userId: null,
-                                            index: null,
-                                            newCourseName: ''
-                                          })}
-                                        >
-                                          Cancel
-                                        </button>
-                                      </div>
-                                    )}
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
+          <div>
+            <div className="md:flex items-center justify-between">
+            {!selectedCourse && (
+              <p className="text-md text-red-500 mt-1 p-2">
+                Select a course to enable delete
+              </p>
             )}
-          </section>
-
-          {/* Paid Course Users */}
-          <section className="mb-8 w-full">
-            <div
-              className="cursor-pointer flex justify-between items-center bg-red-600 text-white p-3 rounded-lg w-full"
-              onClick={() => toggleSection("paid")}
-            >
-              <h2 className="text-lg md:text-xl font-bold">Paid Course Users</h2>
-              <span>{expandedSection === "paid" ? "▲" : "▼"}</span>
+            <div className="flex flex-row items-center justify-between">
+            <p className="text-right p-2" >
+              Total Subscribers:{" "}
+              <strong className="bg-green-500 text-white px-3 py-1 rounded ">
+                {filteredSubscribers.length}
+              </strong>
+            </p>
             </div>
-            {expandedSection === "paid" && (
-              <ul className="mt-4 space-y-4 w-full">
-                {paidUsers.map((user, index) => (
-                  <li key={user.id} className="border border-gray-300 rounded-lg p-4 bg-white shadow-md w-full">
-                    <div className="flex justify-between items-center cursor-pointer" onClick={() => toggleUserDetails(user.id)}>
-                      <h2 className="text-sm md:text-lg font-semibold text-red-600">
-                        {index + 1}. {user.id}
-                      </h2>
-                      <button className="text-gray-600 hover:text-red-600 text-sm md:text-base">
-                        {expandedUser === user.id ? "Hide Details" : "Show Details"}
-                      </button>
-                    </div>
-
-                    {expandedUser === user.id && user.DETAILS?.length > 0 && (
-                      <div className="mt-4 space-y-2">
-                        {user.DETAILS.map((course, idx) => {
-                          const courseName = Object.keys(course)[0];
-                          const isEditing = editingCourseData.userId === user.id &&
-                            editingCourseData.oldCourseName === courseName;
-
-                          return (
-                            <div key={idx} className="border-t border-gray-200 pt-2 text-gray-700 text-sm">
-                              {!isEditing ? (
-                                <>
-                                  <p><span className="font-medium">Course:</span> {courseName}</p>
-                                  <p><span className="font-medium">Subscription Date:</span>
-                                    {formatDate(course[courseName].subscriptionDate)}
-                                  </p>
-                                  <p><span className="font-medium">Expiry Date:</span>
-                                    {formatDate(course[courseName].expiryDate)}
-                                  </p>
-                                  <p><span className="font-medium">Days Left:</span>
-                                    {calculateDaysLeft(course[courseName].expiryDate)}
-                                  </p>
-                                  <div className="mt-2">
-                                    <button
-                                      className="text-white bg-red-600 px-3 py-1 rounded-lg"
-                                      onClick={() => deleteCourse(user.id, courseName)}
-                                    >
-                                      Delete
-                                    </button>
-                                    <button
-                                      className="ml-2 text-white bg-red-600 px-3 py-1 rounded-lg"
-                                      onClick={() => {
-                                        const courseData = course[courseName];
-                                        const getDateValue = (date) => {
-                                          if (date instanceof Timestamp) {
-                                            return date.toDate().toISOString().split('T')[0];
-                                          }
-                                          return new Date(date).toISOString().split('T')[0];
-                                        };
-
-                                        setEditingCourseData({
-                                          userId: user.id,
-                                          oldCourseName: courseName,
-                                          newCourseName: courseName,
-                                          subscriptionDate: getDateValue(courseData.subscriptionDate),
-                                          expiryDate: getDateValue(courseData.expiryDate)
-                                        });
-                                      }}
-                                    >
-                                      Edit
-                                    </button>
-                                  </div>
-                                </>
-                              ) : (
-                                <div className="mt-2 space-y-2">
-                                  <select
-                                    value={editingCourseData.newCourseName}
-                                    onChange={(e) => setEditingCourseData(prev => ({
-                                      ...prev,
-                                      newCourseName: e.target.value
-                                    }))}
-                                    className="border p-2 rounded w-full"
-                                  >
-                                    {courses.map((course) => (
-                                      <option key={course.id} value={course.id}>
-                                        {course.id}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  <input
-                                    type="date"
-                                    value={editingCourseData.subscriptionDate}
-                                    onChange={(e) => setEditingCourseData(prev => ({
-                                      ...prev,
-                                      subscriptionDate: e.target.value
-                                    }))}
-                                    className="border p-2 rounded w-full"
-                                  />
-                                  <input
-                                    type="date"
-                                    value={editingCourseData.expiryDate}
-                                    onChange={(e) => setEditingCourseData(prev => ({
-                                      ...prev,
-                                      expiryDate: e.target.value
-                                    }))}
-                                    className="border p-2 rounded w-full"
-                                  />
-                                  <div className="flex space-x-2 mt-2">
-                                    <button
-                                      className="bg-red-600 text-white px-4 py-2 rounded-lg"
-                                      onClick={handleUpdateCourse}
-                                    >
-                                      Save
-                                    </button>
-                                    <button
-                                      className="bg-gray-600 text-white px-4 py-2 rounded-lg"
-                                      onClick={() => setEditingCourseData({
-                                        userId: null,
-                                        oldCourseName: '',
-                                        newCourseName: '',
-                                        subscriptionDate: '',
-                                        expiryDate: ''
-                                      })}
-                                    >
-                                      Cancel
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          {/* Free Course Users */}
-          <section className="mb-8 w-full">
-            <div
-              className="cursor-pointer flex justify-between items-center bg-red-600 text-white p-3 rounded-lg w-full"
-              onClick={() => toggleSection("free")}
-            >
-              <h2 className="text-lg md:text-xl font-bold">Free Course Users</h2>
-              <span>{expandedSection === "free" ? "▲" : "▼"}</span>
+            
             </div>
 
-            {expandedSection === "free" && (
-              <ul className="mt-4 space-y-4 w-full">
-                {freeUsers.map((user, index) => (
-                  <li key={user.id} className="border border-gray-300 rounded-lg p-4 bg-white shadow-md w-full">
-                    <div className="flex justify-between items-center cursor-pointer" onClick={() => toggleUserDetails(user.id)}>
-                      <h2 className="text-sm md:text-lg font-semibold text-red-600">
-                        {index + 1}. {user.id}
-                      </h2>
-                      <button className="text-gray-600 hover:text-red-600 text-sm md:text-base">
-                        {expandedUser === user.id ? "Hide Details" : "Show Details"}
-                      </button>
-                    </div>
+            <div className="overflow-y-auto my-4 mb-16 max-h-[30rem] hidden md:block md:w-auto border border-gray-800 rounded">
+              <table className="w-full text-left table-auto">
+                <thead className="bg-pink-100 sticky top-0 z-10">
+                  <tr>
+                    <th className="border px-4 py-2">Name</th>
+                    <th className="border px-4 py-2">User ID</th>
+                    <th className="border px-4 w-52 py-2">Phone</th>
+                    <th className="border px-6 py-2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredSubscribers.length > 0 ? (
+                    filteredSubscribers.map((sub) => (
+                      <tr key={sub.id}>
+                        <td className="border px-4 py-2">
+                          {sub.name || "N/A"}
+                        </td>
+                        <td className="border px-4 py-2">{sub.id}</td>
+                        <td className="border px-4 py-2">
+                          {sub.phone || "N/A"}
+                        </td>
+                        <td className="border px-4 py-2 text-center">
+                          <button
+                            disabled={!selectedCourse}
+                            onClick={() =>
+                              selectedCourse &&
+                              handleDeleteCourse(sub.id, selectedCourse)
+                            }
+                            className={`${
+                              !selectedCourse
+                                ? "opacity-50 cursor-not-allowed"
+                                : ""
+                            }`}
+                          >
+                            <img
+                              src="https://cdn-icons-png.flaticon.com/512/6861/6861362.png"
+                              className="h-6"
+                              alt="Delete"
+                            />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="4" className="text-center py-2">
+                        No subscribers found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-                    {expandedUser === user.id && user.freecourses?.length > 0 && (
-                      <div className="mt-4">
-                        <p className="font-medium text-gray-800">Free Courses:</p>
-                        <ul className="list-disc list-inside text-gray-700">
-                          {user.freecourses.map((course, idx) => {
-                            const isEditing = editingFreeCourse.userId === user.id && editingFreeCourse.index === idx;
-                            return (
-                              <li key={idx} className="mt-1">
-                                {!isEditing ? (
-                                  <div className="flex items-center">
-                                    <span>{course}</span>
-                                    <button
-                                      className="ml-2 text-red-600 text-sm"
-                                      onClick={() => setEditingFreeCourse({
-                                        userId: user.id,
-                                        index: idx,
-                                        newCourseName: course
-                                      })}
-                                    >
-                                      Edit
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center space-x-2">
-                                    <input
-                                      type="text"
-                                      value={editingFreeCourse.newCourseName}
-                                      onChange={(e) => setEditingFreeCourse(prev => ({
-                                        ...prev,
-                                        newCourseName: e.target.value
-                                      }))}
-                                      className="border p-1 rounded flex-1"
-                                    />
-                                    <button
-                                      className="bg-red-600 text-white px-2 py-1 rounded text-sm"
-                                      onClick={handleUpdateFreeCourse}
-                                    >
-                                      Save
-                                    </button>
-                                    <button
-                                      className="bg-gray-600 text-white px-2 py-1 rounded text-sm"
-                                      onClick={() => setEditingFreeCourse({
-                                        userId: null,
-                                        index: null,
-                                        newCourseName: ''
-                                      })}
-                                    >
-                                      Cancel
-                                    </button>
-                                  </div>
-                                )}
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
+          {/* Card layout for small screens */}
+          <div className="space-y-4 md:hidden">
+            {filteredSubscribers.length > 0 ? (
+              filteredSubscribers.map((sub) => (
+                <div
+                  key={sub.id}
+                  className="border rounded-lg shadow p-4 bg-white"
+                >
+                  <p className="mb-2">
+                    <span className="font-semibold">Name:</span>{" "}
+                    {sub.name || "N/A"}
+                  </p>
+                  <p className="mb-2">
+                    <span className="font-semibold">User ID:</span> {sub.id}
+                  </p>
+                  <p className="mb-2">
+                    <span className="font-semibold">Phone:</span>{" "}
+                    {sub.phone || "N/A"}
+                  </p>
+                  <div className="text-right">
+                    <button
+                      onClick={() => handleDeleteCourse(sub.id, selectedCourse)}
+                      className={`${
+                        !selectedCourse
+                          ? "opacity-50 cursor-not-allowed"
+                          : ""
+                      }`}
+                    >
+                      <img
+                        src="https://cdn-icons-png.flaticon.com/512/6861/6861362.png"
+                        className="h-6 inline-block"
+                        alt="Delete"
+                      />
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-center py-4 text-gray-500">
+                No subscribers found.
+              </p>
             )}
-          </section>
+          </div>
         </div>
       </div>
     </div>

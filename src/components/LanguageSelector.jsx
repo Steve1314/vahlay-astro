@@ -1,5 +1,6 @@
+import { div } from "framer-motion/client";
 import { useState, useEffect } from "react";
-
+import { IoMdClose } from "react-icons/io";
 const GoogleTranslate = () => {
     const [showTranslate, setShowTranslate] = useState(false);
 
@@ -19,7 +20,7 @@ const GoogleTranslate = () => {
                     {
                         pageLanguage: "en",
                         includedLanguages: "fr,de,es,zh,hi,ar,ja,ru,pt,ko",
-                        layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE
+                        layout: window.google.translate.TranslateElement.InlineLayout.HORIZONTAL, // Change this to SIMPLE, HORIZONTAL, or VERTICAL
                     },
                     "google_translate_element"
                 );
@@ -30,16 +31,22 @@ const GoogleTranslate = () => {
     }, [showTranslate]); // Runs only when `showTranslate` state changes
 
     return (
-        <div className="text-center">
-            <button
-                onClick={() => setShowTranslate(!showTranslate)}
-                className="px-4 py-2 bg-red-700 text-white rounded-lg hover:bg-red-900 transition"
-            >
-                {showTranslate ? "Hide" : "Translate"}
-            </button>
+        <div className="flex flex-row  text-center ">
+           
 
+           
+             <div>
+             <button
+                onClick={() => setShowTranslate(!showTranslate)}
+                className="p-2 mt-1 bg-red-700 text-white rounded-lg hover:bg-red-900 transition"
+            >
+                {showTranslate ? <IoMdClose/> : "Translate"}
+            </button>
+             </div>
             {showTranslate && (
-                <div id="google_translate_element" className="mt-4 border p-2 inline-block rounded-lg shadow-md bg-white"></div>
+               
+                    <div id="google_translate_element" > </div>
+                
             )}
         </div>
     );

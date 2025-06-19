@@ -54,13 +54,13 @@ const AdminContact = () => {
   );
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-gray-100">
+    <div className="flex flex-col md:flex-row min-h-screen md:p-0 p-4 py-16 bg-gray-100">
       {/* Sidebar */}
       <div className=" shadow-md">
         <Admin />
       </div>
 
-      <div className="w-full max-w-6xl mx-auto bg-white p-6 rounded-lg shadow-md my-4">
+      <div className="w-full max-w-6xl mx-auto bg-white p-6 rounded-lg shadow-md  ">
         <h2 className="text-2xl font-bold text-gray-700 mb-4 text-center">📩 Contact Inquiries</h2>
 
         {/* Search Input */}

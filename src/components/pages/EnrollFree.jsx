@@ -10,6 +10,7 @@ const EnrollPage = () => {
   const [phone, setPhone] = useState("");
   const [selectedCourse, setSelectedCourse] = useState("");
   const [courses, setCourses] = useState([]);
+  const [recaptchaToken, setRecaptchaToken] = useState(null);
   const navigate = useNavigate();
 
   const recaptchaSiteKey = import.meta.env. VITE_RECAPTCHA_SITE_KEY;
@@ -18,6 +19,7 @@ const EnrollPage = () => {
     const fetchCourses = async () => {
       try {
         const freeCoursesCollection = collection(db, 'freeCourses');
+        console.log(freeCoursesCollection)
         const freeCoursesSnapshot = await getDocs(freeCoursesCollection);
         const freeCourses = freeCoursesSnapshot.docs.map((doc) => ({
           id: doc.id,
@@ -29,9 +31,11 @@ const EnrollPage = () => {
       }
     };
     fetchCourses();
+   
   }, []);
 
   const handleRecaptchaChange = (value) => {
+    setRecaptchaToken(value);
   };
 
   const handleEnroll = async (e) => {
@@ -40,9 +44,16 @@ const EnrollPage = () => {
       alert("Please fill out all fields.");
       return;
     }
+    if (!recaptchaToken) {
+      alert("Please verify the reCAPTCHA.");
+      return;
+    }
     const userRef = doc(db, "subscriptions", email);
+    
+
     try {
       const docSnap = await getDoc(userRef);
+     
       if (docSnap.exists()) {
         const userData = docSnap.data();
         if (userData.freecourses && userData.freecourses.includes(selectedCourse)) {
@@ -70,8 +81,8 @@ const EnrollPage = () => {
   };
 
   return (
-    <div className="bg-red-500 text-white p-8 rounded-lg max-w-lg mx-auto min-h-screen mt-[25px] mb-[25px]">
-      <h2 className="text-3xl font-semibold text-center mb-6">Enroll Now</h2>
+    <div className="bg-red-500 text-white p-4 rounded-lg max-w-lg mx-auto min-h-screen text-sm   m-6 ">
+      <h2 className="text-xl md:text-4xl  font-semibold text-center mb-6">Enroll Now</h2>
       <p className="text-center mb-6">
         Join our <span className="font-bold text-white">Astrology</span> course and begin your journey into the world of astrology!
       </p>

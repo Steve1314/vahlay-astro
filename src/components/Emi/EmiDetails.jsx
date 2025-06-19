@@ -139,9 +139,9 @@ const AdminEMITracking = () => {
 
       const encodedEmail = encodeURIComponent(email);
 
-const isLocal = window.location.hostname === "localhost";
-const baseUrl = isLocal ? "http://localhost:5173" : "https://vahlayastro.com";
-const paymentLink = `${baseUrl}/pay/${courseId}/${emiNumber}/${plan.id}/${encodedEmail}`;
+      const isLocal = window.location.hostname === "localhost";
+      const baseUrl = isLocal ? "http://localhost:5173" : "https://vahlayastro.com";
+      const paymentLink = `${baseUrl}/pay/${courseId}/${emiNumber}/${plan.id}/${encodedEmail}`;
 
       const reminderMessage = `
             <!DOCTYPE html>
@@ -196,7 +196,7 @@ const paymentLink = `${baseUrl}/pay/${courseId}/${emiNumber}/${plan.id}/${encode
             </body>
             </html>
           `;
-     const reminder = `Reminder: Your EMI No${emiNumber} for course (${courseId}) is due on ${emiDate.toLocaleDateString()}. Please pay to avoid penalties.`;
+      const reminder = `Reminder: Your EMI No${emiNumber} for course (${courseId}) is due on ${emiDate.toLocaleDateString()}. Please pay to avoid penalties.`;
 
       // Send notification to user
       await addDoc(collection(db, "notifications"), {

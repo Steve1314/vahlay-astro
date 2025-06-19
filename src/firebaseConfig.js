@@ -3,6 +3,8 @@ import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import { getAnalytics } from "firebase/analytics";
+
  
 // Firebase configuration using VITE_ prefixed environment variables
 const firebaseConfig = {
@@ -16,6 +18,10 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
  
+
+
+
+
 // Initialize Firebase only if it hasn't been initialized already
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
  
@@ -23,6 +29,8 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
 const auth = getAuth(app); // Authentication (Email/Password, Phone, etc.)
 const db = getFirestore(app); // Firestore Database
 const storage = getStorage(app); // Cloud Storage
+const analytics = getAnalytics(app);
+
  
-export { auth, db, storage, app };
+export { auth, db, storage, app ,analytics  };
  

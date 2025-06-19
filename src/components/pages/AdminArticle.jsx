@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { db, storage } from "../../firebaseConfig";
-import Admin from "./Admin";  
+import Admin from "./Admin";
 import {
   collection,
   getDocs,
@@ -11,7 +11,8 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { Link } from "react-router-dom";
+import { MdEditSquare ,MdDelete  } from "react-icons/md";
+
 
 const AdminArticles = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -19,12 +20,15 @@ const AdminArticles = () => {
   const [formVisible, setFormVisible] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [editMode, setEditMode] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // NEW: Buffering while fetching articles
+  const [isLoading, setIsLoading] = useState(true); // Buffering while fetching articles
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [formState, setFormState] = useState({
     title: "",
     author: "",
+    // "rawDate" is for the date input (YYYY-MM-DD)
+    rawDate: "",
+    // "data" will hold the formatted date (e.g., "April 1, 2022")
     data: "",
     denglish: "",
     dhindi: "",
@@ -33,10 +37,12 @@ const AdminArticles = () => {
     description: "",
     type: "",
     content: "",
+    referenceLink: "", // ✅ new field
   });
   const [selectedImage, setSelectedImage] = useState(null);
-  const [alertMessage, setAlertMessage] = useState(""); // NEW: Alert message
-  const [alertType, setAlertType] = useState(""); // NEW: Success or error
+  const [alertMessage, setAlertMessage] = useState(""); // Alert message
+  const [alertType, setAlertType] = useState(""); // Success or error
+
   useEffect(() => {
     fetchArticles();
   }, []);
@@ -59,6 +65,7 @@ const AdminArticles = () => {
   const handleSaveArticle = async () => {
     setIsSaving(true);
     try {
+      // 1. Handle image upload if an image is selected
       let imageUrl = formState.imageUrl;
       if (selectedImage) {
         const imageRef = ref(storage, `articles/${selectedImage.name}`);
@@ -66,13 +73,26 @@ const AdminArticles = () => {
         imageUrl = await getDownloadURL(uploadTask.ref);
       }
 
+      // 2. Format the date from the raw value ("YYYY-MM-DD") to "April 1, 2022"
+      let formattedDate = "";
+      if (formState.rawDate) {
+        const dateObj = new Date(formState.rawDate);
+        const options = { month: "long", day: "numeric", year: "numeric" };
+        formattedDate = dateObj.toLocaleDateString("en-US", options);
+      }
+
+      // 3. Prepare article data
       const articleData = {
         ...formState,
         imageUrl,
         createdAt: serverTimestamp(),
+        // Save the formatted date in the "data" field
+        data: formattedDate,
       };
 
+      // 4. Add or update the article in Firestore
       if (editMode) {
+        // Don't overwrite 'createdAt' on edit
         const { createdAt, ...updatedArticleData } = articleData;
         await updateDoc(doc(db, "Articles", formState.id), updatedArticleData);
         showAlert("Article updated successfully!", "success");
@@ -81,6 +101,7 @@ const AdminArticles = () => {
         showAlert("Article added successfully!", "success");
       }
 
+      // 5. Refresh and reset form
       fetchArticles();
       resetForm();
     } catch (error) {
@@ -108,6 +129,7 @@ const AdminArticles = () => {
     setFormState({
       title: "",
       author: "",
+      rawDate: "",
       data: "",
       denglish: "",
       dhindi: "",
@@ -116,6 +138,7 @@ const AdminArticles = () => {
       description: "",
       type: "",
       content: "",
+      referenceLink: "", // ✅ new field
     });
     setSelectedImage(null);
     setEditMode(false);
@@ -135,11 +158,11 @@ const AdminArticles = () => {
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-white">
       {/* Sidebar - Always visible on desktop and mobile */}
-      <div className="w-full md:w-1/4 bg-white shadow-md">
+      <div className="w-full md:w-1/6 bg-white shadow-md">
         <Admin />
       </div>
 
-      <div className="w-full md:w-3/4 px-4 sm:px-6 py-8 mx-auto">
+      <div className="w-full md:w-3/4 px-4 sm:px-6 md:py-12 mx-auto pt-16 ">
         {/* 🔔 Alert Messages for Success/Error */}
         {alertMessage && (
           <div className={`p-2 text-center text-white ${alertType === "success" ? "bg-green-500" : "bg-red-500"} rounded-md mb-4`}>
@@ -151,7 +174,6 @@ const AdminArticles = () => {
           <h2 className="text-3xl text-red-600 font-semibold mb-4">Manage Articles</h2>
           {/* ⏳ Loader for Fetching Articles */}
           {isLoading && <p className="text-center text-gray-500">Loading articles...</p>}
-
 
           {formVisible && (
             <form
@@ -200,10 +222,11 @@ const AdminArticles = () => {
               </div>
               <div>
                 <label className="block font-medium">Date</label>
-                <input type="date"
-                  value={formState.data}
+                <input
+                  type="date"
+                  value={formState.rawDate}
                   onChange={(e) =>
-                    setFormState({ ...formState, data: e.target.value })
+                    setFormState({ ...formState, rawDate: e.target.value })
                   }
                   className="w-full p-2 border rounded"
                 />
@@ -229,6 +252,19 @@ const AdminArticles = () => {
                 ></textarea>
               </div>
               <div>
+                <label className="block font-medium">Reference Video Link</label>
+                <input
+                  type="url"
+                  placeholder="https://youtube.com/..."
+                  value={formState.referenceLink}
+                  onChange={(e) =>
+                    setFormState({ ...formState, referenceLink: e.target.value })
+                  }
+                  className="w-full p-2 border rounded"
+                />
+              </div>
+
+              <div>
                 <label className="block font-medium">Upload Image</label>
                 <input
                   type="file"
@@ -240,9 +276,16 @@ const AdminArticles = () => {
                   </p>
                 )}
               </div>
-              <button onClick={handleSaveArticle} disabled={isSaving} className={`px-4 py-2 w-full ${isSaving ? "bg-gray-400 cursor-not-allowed" : "bg-red-500 hover:bg-red-600 text-white"}`}>
-              {isSaving ? "Saving..." : editMode ? "Update Article" : "Add Article"}
-            </button>
+              <button
+                onClick={handleSaveArticle}
+                disabled={isSaving}
+                className={`px-4 py-2 w-full ${isSaving
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-red-500 hover:bg-red-600 text-white"
+                  }`}
+              >
+                {isSaving ? "Saving..." : editMode ? "Update Article" : "Add Article"}
+              </button>
             </form>
           )}
 
@@ -251,34 +294,45 @@ const AdminArticles = () => {
               resetForm();
               setFormVisible(true);
             }}
-            className="w-full md:w-auto px-6 py-3 bg-red-500 text-white rounded-full hover:bg-green-600 transition-all text-center mb-4"
+            className="w-full md:w-auto px-6 py-3 bg-red-500 text-white rounded-full hover:bg-green-600 transition-all text-center mb-6"
           >
             Upload New Article
           </button>
 
-          <ul className="space-y-4">
+          <ul className=" md:grid grid-cols-3 gap-6  ">
             {articles.map((article) => (
               <li
                 key={article.id}
-                className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4 border rounded-lg bg-white shadow-md"
+                className="flex flex-col md:flex-col md:h-auto justify-between items-start md:mb-0 mb-4 md:items-center gap-4 p-4 border rounded-lg bg-white shadow-md"
               >
                 <span className="text-red-800">
                   <strong>{article.title}</strong> <br /> (Hindi: {article.hindi})
                 </span>
-                <div className="flex gap-4 w-full md:w-auto">
+                <div className="flex gap-4 w-full items-center justify-evenly md:w-auto">
                   <button
                     onClick={() => {
                       setEditMode(true);
-                      setFormState(article);
+                      // When editing, set rawDate as empty since the formatted date is stored.
+                      // Optionally, you might parse the formatted date back to YYYY-MM-DD if needed.
+                      setFormState({ ...article, rawDate: "" });
                       setFormVisible(true);
+                      // Scroll to the top of the page smoothly so the form is visible
+                      window.scrollTo({ top: 0, behavior: "smooth" });
                     }}
-                    className="w-full md:w-auto px-6 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all"
+                    className="w-auto md:w-auto px-6  py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all"
                   >
-                    Edit
+                  <MdEditSquare className="text-xl " />
                   </button>
-                  <button onClick={() => handleDeleteArticle(article.id)} disabled={isDeleting} className={`ml-4 px-4 py-2 ${isDeleting ? "bg-gray-400 cursor-not-allowed" : "bg-red-500 hover:bg-red-600 text-white"} rounded-full`}>
-                {isDeleting ? "Deleting..." : "Delete"}
-              </button>
+                  <button
+                    onClick={() => handleDeleteArticle(article.id)}
+                    disabled={isDeleting}
+                    className={` w-auto ml-4 px-6 py-2 ${isDeleting
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-red-500 hover:bg-red-600 text-white"
+                      } rounded-full`}
+                  >
+                    {isDeleting ? "Deleting..." :   <MdDelete  className="text-xl" />}
+                  </button>
                 </div>
               </li>
             ))}

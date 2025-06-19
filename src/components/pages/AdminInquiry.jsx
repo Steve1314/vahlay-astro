@@ -120,7 +120,7 @@ const AdminInquiries = () => {
             <div className="md:hidden">
               {filteredInquiries.map((inquiry) => (
                 <div key={inquiry.id} className="bg-white p-4 rounded-lg shadow-md mb-4">
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col justify-between items-start">
                     <div>
                       <h3 className="text-lg font-semibold text-gray-700">{inquiry.name}</h3>
                       <p className="text-gray-600">{inquiry.email}</p>
@@ -129,7 +129,7 @@ const AdminInquiries = () => {
                       onClick={() =>
                         setExpandedInquiry(expandedInquiry === inquiry.id ? null : inquiry.id)
                       }
-                      className="text-blue-500 hover:underline focus:outline-none"
+                      className="text-white text-sm focus:outline-none bg-red-500 px-3 py-1 rounded-full"
                     >
                       {expandedInquiry === inquiry.id ? "Show Less ▲" : "Show More ▼"}
                     </button>

@@ -1,10 +1,18 @@
-
 import React, { useEffect, useState } from "react";
 import { db } from "../../firebaseConfig";
-import { collection, query, where, onSnapshot, addDoc, doc, getDoc } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  addDoc,
+  doc,
+  getDoc,
+} from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { Link } from "react-router-dom";
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
+import Aside from "../pages/Aside";
 
 const EMIDetails = () => {
   const [userEmail, setUserEmail] = useState(null);
@@ -17,7 +25,6 @@ const EMIDetails = () => {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-
 
   const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY;
   const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID;
@@ -67,26 +74,26 @@ const EMIDetails = () => {
     }
   };
 
-
   const closePaymentModal = () => {
-    setPaymentModal({ isOpen: false, courseId: null, emiNumber: null, amount: null });
+    setPaymentModal({
+      isOpen: false,
+      courseId: null,
+      emiNumber: null,
+      amount: null,
+    });
   };
-
 
   const fetchUSDConversionRate = async () => {
     try {
-      const response = await fetch("https://api.exchangerate-api.com/v4/latest/INR"); // Replace with your preferred API
+      const response = await fetch(
+        "https://api.exchangerate-api.com/v4/latest/INR"
+      ); // Replace with your preferred API
       const data = await response.json();
       return data.rates.USD || 0; // Return the USD rate
     } catch (error) {
       return 0; // Default to 0 on error
     }
   };
-
-
-
-
-
 
   const PaymentModal = () => {
     const [usdAmount, setUsdAmount] = useState(null); // State to store the USD amount
@@ -96,7 +103,9 @@ const EMIDetails = () => {
       // Fetch USD conversion rate when the modal opens
       const fetchUSDConversionRate = async () => {
         try {
-          const response = await fetch("https://api.exchangerate-api.com/v4/latest/INR");
+          const response = await fetch(
+            "https://api.exchangerate-api.com/v4/latest/INR"
+          );
           const data = await response.json();
           const conversionRate = data.rates.USD || 80; // Fallback rate
           setUsdAmount((paymentModal.amount * conversionRate).toFixed(2));
@@ -110,11 +119,12 @@ const EMIDetails = () => {
 
     if (!paymentModal.isOpen) return null;
 
-
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20">
         <div className="bg-white rounded-lg shadow-lg p-6 w-96">
-          <h3 className="text-xl font-bold mb-4 text-red-600">Select Payment Method</h3>
+          <h3 className="text-xl font-bold mb-4 text-red-600">
+            Select Payment Method
+          </h3>
           <p className="mb-6">
             EMI #{paymentModal.emiNumber} for Course {paymentModal.courseId} - ₹
             {Number(paymentModal.amount).toLocaleString("en-IN")}
@@ -141,7 +151,14 @@ const EMIDetails = () => {
                     fill="none"
                     viewBox="0 0 24 24"
                   >
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
                     <path
                       className="opacity-75"
                       fill="currentColor"
@@ -186,16 +203,19 @@ const EMIDetails = () => {
                         name: formData.fullName || "NA", // Replace with user's name
                       };
 
-                      const backendResponse = await fetch("https://backend-7e8f.onrender.com/api/final/paypal/success", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          paymentId,
-                          userDetails,
-                          amount: paymentModal.amount,
-                          courseId: paymentModal.courseId,
-                        }),
-                      });
+                      const backendResponse = await fetch(
+                        "https://backend-7e8f.onrender.com/api/final/paypal/success",
+                        {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            paymentId,
+                            userDetails,
+                            amount: paymentModal.amount,
+                            courseId: paymentModal.courseId,
+                          }),
+                        }
+                      );
 
                       if (!backendResponse.ok) {
                         const errorData = await backendResponse.json();
@@ -214,18 +234,23 @@ const EMIDetails = () => {
                         timestamp: new Date(),
                       });
 
-                      alert(`Payment for EMI #${paymentModal.emiNumber} successful via PayPal!`);
+                      alert(
+                        `Payment for EMI #${paymentModal.emiNumber} successful via PayPal!`
+                      );
                       closePaymentModal();
                     } catch (error) {
-                      alert("An error occurred during payment. Please try again.");
+                      alert(
+                        "An error occurred during payment. Please try again."
+                      );
                     }
                   }}
                   onError={(err) => {
-                    alert("An error occurred during the PayPal payment process.");
+                    alert(
+                      "An error occurred during the PayPal payment process."
+                    );
                   }}
                 />
               </PayPalScriptProvider>
-
             ) : (
               <p className="text-gray-500">Loading PayPal options...</p>
             )}
@@ -243,13 +268,11 @@ const EMIDetails = () => {
 
   //handlePaymentSuccess(paymentModal.courseId, paymentModal.emiNumber, paymentModal.amount, details.id);
 
-
   const handlePayment = async (courseId, emiNumber, amount, paymentMethod) => {
     try {
       const amountInPaise = Number(amount) * 100; // Amount for Razorpay
 
       if (paymentMethod === "razorpay") {
-
         setIsLoading(true);
         const options = {
           key: RAZORPAY_KEY,
@@ -269,11 +292,14 @@ const EMIDetails = () => {
               };
 
               // Send payment details to the backend
-              const res = await fetch("https://backend-7e8f.onrender.com/api/final/success", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(paymentDetails),
-              });
+              const res = await fetch(
+                "https://backend-7e8f.onrender.com/api/final/success",
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(paymentDetails),
+                }
+              );
 
               if (!res.ok) {
                 throw new Error("Failed to communicate with the backend.");
@@ -283,15 +309,21 @@ const EMIDetails = () => {
               const result = await res.json();
 
               if (result.success) {
-                handlePaymentSuccess(courseId, emiNumber, amount, response.razorpay_payment_id);
+                handlePaymentSuccess(
+                  courseId,
+                  emiNumber,
+                  amount,
+                  response.razorpay_payment_id
+                );
                 alert("Payment successful! Emails have been sent.");
               } else {
                 throw new Error(result.message || "Failed to send emails.");
               }
             } catch (err) {
-              alert("Payment was successful, but there was an issue processing the response.");
-            }
-            finally {
+              alert(
+                "Payment was successful, but there was an issue processing the response."
+              );
+            } finally {
               setIsLoading(false);
             }
           },
@@ -308,10 +340,15 @@ const EMIDetails = () => {
     } catch (error) {
       alert("Payment failed. Check Contact for details.");
     }
-    setIsLoading(false)
+    setIsLoading(false);
   };
 
-  const handlePaymentSuccess = async (courseId, emiNumber, amount, paymentId) => {
+  const handlePaymentSuccess = async (
+    courseId,
+    emiNumber,
+    amount,
+    paymentId
+  ) => {
     try {
       await addDoc(collection(db, "payments"), {
         userId: userEmail,
@@ -377,7 +414,10 @@ const EMIDetails = () => {
     );
 
     const paymentsUnsubscribe = onSnapshot(paymentsQueryRef, (snapshot) => {
-      const userPayments = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const userPayments = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
       setPayments(userPayments);
     });
 
@@ -387,10 +427,16 @@ const EMIDetails = () => {
   useEffect(() => {
     if (payments.length === 0) return;
 
-    const plansUnsubscribe = onSnapshot(collection(db, "emiPlans"), (snapshot) => {
-      const allEmiPlans = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setEmiPlans(allEmiPlans);
-    });
+    const plansUnsubscribe = onSnapshot(
+      collection(db, "emiPlans"),
+      (snapshot) => {
+        const allEmiPlans = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setEmiPlans(allEmiPlans);
+      }
+    );
 
     return () => plansUnsubscribe();
   }, [payments]);
@@ -403,7 +449,8 @@ const EMIDetails = () => {
     payments.forEach((payment) => {
       const { courseId, amount } = payment;
       const relevantPlan = emiPlans.find(
-        (plan) => plan.courseId === courseId && Number(plan.amount) === Number(amount)
+        (plan) =>
+          plan.courseId === courseId && Number(plan.amount) === Number(amount)
       );
 
       if (!relevantPlan) return;
@@ -443,75 +490,17 @@ const EMIDetails = () => {
     setLoading(false);
   }, [payments, emiPlans]);
 
-
   return (
-    <div className="flex flex-col md:flex-row h-screen min-h-screen"
+    <div
+      className="flex flex-col md:flex-row h-screen min-h-screen "
       style={{
-        maxHeight: '60vh',  // Set the maximum height for the scrollable container
-        overflowY: 'auto',  // Enable vertical scrolling
-        paddingRight: '10px', // Optional: Adds space to prevent the scrollbar from overlapping content
+        maxHeight: "60vh", // Set the maximum height for the scrollable container
+        overflowY: "auto", // Enable vertical scrolling
+        paddingRight: "10px", // Optional: Adds space to prevent the scrollbar from overlapping content
       }}
     >
-      <aside
-        className={`w-full md:w-64 bg-red-600 text-white p-4 shadow-lg transition-transform transform ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } md:translate-x-0 fixed md:relative h-full z-10`}
-      >
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <button
-            onClick={() => setIsSidebarOpen(false)}
-            className="md:hidden text-2xl font-bold"
-          >
-            ✖
-          </button>
-        </div>
-        <div className="p-6 flex flex-col items-center">
-          <img
-            src={formData.profilePic || "https://via.placeholder.com/100"}
-            alt="Profile"
-            className="rounded-full mb-4 w-24 h-24 object-cover"
-          />
-          <h2 className="text-lg font-bold">{user?.displayName || "User"}</h2>
-        </div>
-        <nav className="p-4">
-          <ul className="space-y-4">
-            <li>
-              <Link
-                to="/profile"
-                className="block p-3 bg-red-500 hover:bg-red-400 rounded transition"
-              >
-                My Profile
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/dashboard"
-                className="block p-3 bg-red-500 hover:bg-red-400 rounded transition"
-              >
-                Enrolled Courses
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/courses"
-                className="block p-3 bg-red-500 hover:bg-red-400 rounded transition"
-              >
-                Add Courses
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/finalize"
-                className="block p-3 bg-red-500 hover:bg-red-400 rounded transition"
-              >
-                Payments
-              </Link>
-            </li>
-          </ul>
-        </nav>
-      </aside>
-
-      <div className="flex-1 overflow-y-auto p-6 my-auto max-w-4xl mx-auto bg-white shadow rounded border border-red-200 text-gray-800">
+      <Aside />
+      <div className="flex-1 bg-white shadow-lg rounded-lg p-6 pt-16 my-4 md:m-0 md:pt-6 overflow-x-auto">
         <h2 className="text-2xl font-bold mb-4 text-red-600">
           EMI Details for {userEmail}
         </h2>
@@ -523,7 +512,8 @@ const EMIDetails = () => {
               You are not enrolled in any EMI plans.
             </h3>
             <p className="text-gray-600 mt-2">
-              Explore available courses with EMI options and start your journey today.
+              Explore available courses with EMI options and start your journey
+              today.
             </p>
             <Link to="/courses">
               <button className="mt-4 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
@@ -534,22 +524,31 @@ const EMIDetails = () => {
         ) : (
           Object.keys(emiSchedules).map((courseId) => {
             const schedule = emiSchedules[courseId] || [];
-            const unpaidEMIs = schedule.filter((emi) => emi.status === "unpaid");
+            const unpaidEMIs = schedule.filter(
+              (emi) => emi.status === "unpaid"
+            );
             const totalUnpaid = unpaidEMIs.reduce(
               (sum, emi) => sum + Number(emi.amount),
               0
             );
 
             return (
-              <div key={courseId} className="mb-8 border border-red-100 rounded p-4">
+              <div
+                key={courseId}
+                className="mb-8 border border-red-100 rounded p-4"
+              >
                 <h3 className="text-lg font-semibold mb-2 text-red-600">
                   Course: {courseId}
                 </h3>
                 <ul>
                   {schedule.map((emi, idx) => (
-                    <li key={idx} className="flex justify-between items-center mb-2">
+                    <li
+                      key={idx}
+                      className="flex justify-between items-center mb-2"
+                    >
                       <span>
-                        EMI #{emi.emiNumber} — Due on {emi.date.toLocaleDateString("en-IN")} — ₹
+                        EMI #{emi.emiNumber} — Due on{" "}
+                        {emi.date.toLocaleDateString("en-IN")} — ₹
                         {Number(emi.amount).toLocaleString("en-IN")}
                       </span>
                       {emi.status === "paid" ? (
@@ -558,7 +557,13 @@ const EMIDetails = () => {
                         </span>
                       ) : (
                         <button
-                          onClick={() => openPaymentModal(courseId, emi.emiNumber, emi.amount)}
+                          onClick={() =>
+                            openPaymentModal(
+                              courseId,
+                              emi.emiNumber,
+                              emi.amount
+                            )
+                          }
                           className="bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded"
                         >
                           Pay
@@ -574,17 +579,8 @@ const EMIDetails = () => {
 
         <PaymentModal />
       </div>
-
     </div>
   );
 };
 
 export default EMIDetails;
-
-
-
-
-
-
-
-

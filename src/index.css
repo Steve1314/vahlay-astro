@@ -92,13 +92,13 @@ body {
 @layer utilities {
   @keyframes oscillate {
     0% {
-      transform: rotate(-360deg);
+      transform: rotate(-80deg);
     }
     50% {
       transform: rotate(0deg);
     }
     100% {
-      transform: rotate(-360deg);
+      transform: rotate(-80deg);
     }
   }
 
@@ -106,6 +106,51 @@ body {
     animation: oscillate 10s ease-in-out infinite;
   }
 }
+
+@keyframes scroll-up {
+  0% {
+    transform: translateY(0%);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+
+.animate-scroll-slow {
+  animation: scroll-up 50s linear infinite;
+}
+
+.animate-scroll-medium {
+  animation: scroll-up 40s linear infinite;
+}
+
+.animate-scroll-fast {
+  animation: scroll-up 30s linear infinite;
+}
+
+
+@keyframes tailwind-bounce {
+  0%, 100% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1); /* fast down */
+  }
+  50% {
+    transform: translateY(-25%); /* bounce height */
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1); /* slow up */
+  }
+}
+
+.bounce-hover:hover {
+  animation: tailwind-bounce 1s infinite;
+}
+
+
+
+
+
+
+
 
 /* Make sure the Google Translate dropdown appears */
 .goog-te-gadget-simple {

@@ -17,10 +17,10 @@ const Services = () => {
       link: "/consulting",
     },
     {
-      title: "Books",
+      title: "Articles",
       img: "/assets/books.webp",
       description: "Read More",
-      link: "/blogs",
+      link: "/articles",
     },
   ];
 
@@ -39,7 +39,7 @@ const Services = () => {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="bg-gray-50 min-h-screen text-sm">
       {/* Hero Section */}
       <div className="relative bg-gray-50" style={{
   backgroundImage: "url('/assets/Screenshot 2024-11-28 211019.png')"
@@ -48,7 +48,7 @@ const Services = () => {
           {/* Left Section - Text */}
           <div className="flex-1 space-y-6 text-center lg:text-left">
             <motion.h1
-              className="text-5xl font-bold text-red-600 leading-tight"
+              className="text-xl md:text-4xl font-bold text-red-600 leading-tight"
               initial={{ opacity: 0, x: -50 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8 }}
@@ -57,7 +57,7 @@ const Services = () => {
               of the <span className="text-gray-800">Vahlay Astro</span>
             </motion.h1>
             <motion.p
-              className="text-gray-700 text-lg leading-relaxed"
+              className="text-gray-700  leading-relaxed"
               initial={{ opacity: 0, x: -50 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 1 }}
@@ -76,7 +76,7 @@ const Services = () => {
 
           {/* Right Section - Image */}
           <motion.div
-            className="flex-1"
+            className="md:flex-1 flex items-center justify-between"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1 }}
@@ -85,7 +85,7 @@ const Services = () => {
           <img
             src="/assets/wheel.png" // Replace with the correct image path
             alt="Astrology Chart"
-           className="w-4/5 lg:w-full animate-slowspin"
+           className="lg:w-full animate-slowspin"
           />
        
           </motion.div>
@@ -100,7 +100,7 @@ const Services = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6 }}
         >
-          <h2 className="text-5xl font-bold text-red-800">What We Offer</h2>
+          <h2 className="text-xl md:text-4xl font-bold text-red-800">What We Offer</h2>
           <p className="text-gray-600 mt-4">
             We provide a range of astrology services designed to help you unlock deeper insights into your life.
           </p>

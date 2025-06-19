@@ -104,7 +104,7 @@ const AdminTitleOrder = () => {
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">
       <AdminSidebar />
-      <main className="flex-1 p-4 md:p-8">
+      <main className="flex-1 p-4 md:p-8 py-16">
         <div className="max-w-4xl mx-auto">
           <div className="mb-6">
             <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-2">

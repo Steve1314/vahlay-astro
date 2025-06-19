@@ -39,11 +39,11 @@ const AdminEMIUsers = () => {
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-white">
       {/* Sidebar - Always visible on desktop and mobile */}
-      <div className="w-full md:w-1/4 bg-white shadow-md">
+      <div className="w-full md:w-1/6 bg-white shadow-md">
         <Admin />
       </div>
 
-      <div className="w-full md:w-3/4 px-4 sm:px-6 py-8 mx-auto">
+      <div className="w-full md:w-3/4 px-4 sm:px-6 pt-16 md:py-8 mx-auto">
         <div className="max-w-6xl mx-auto bg-white shadow rounded p-6 border border-red-200">
           <button
             onClick={() => setIsSidebarOpen(true)}

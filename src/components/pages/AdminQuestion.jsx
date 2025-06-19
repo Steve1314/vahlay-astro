@@ -245,7 +245,7 @@ const QandAAdminPanel = () => {
         <Admin />
       </div>
      
-      <div className="w-full md:w-3/4 px-4 sm:px-6 py-8 mx-auto">
+      <div className="w-full md:w-3/4 px-4 sm:px-6 py-16 md:py-8 mx-auto">
      <h2 className="text-3xl font-bold text-red-600 mb-8 text-center">
         Q&A Admin Panel
       </h2>

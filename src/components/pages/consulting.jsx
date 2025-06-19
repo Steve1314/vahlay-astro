@@ -43,24 +43,17 @@ const Consulting = () => {
   ];
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="bg-gray-50 min-h-screen text-sm">
       {/* Hero Section */}
       <section className="relative bg-gradient-to-r from-red-600 to-red-600 text-white py-28">
      
       <img
           src="/assets/elements2.png"
           alt="Astrology Chart"
-          className="absolute w-96 h-96 opacity-80 animate-slowspin  top-1/2 left-1/4"
+          className="absolute w-96 h-96 opacity-80 md:animate-slowspin top-1 md:top-1/2 md:left-1/5"
         />
-        <div className="absolute inset-0 overflow-hidden">
-          <motion.div
-            className="w-[800px] h-[800px] rounded-full bg-red-500 blur-3xl opacity-20 absolute top-[-200px] right-[-400px]"
-            animate={{ scale: [1, 1.2, 1], rotate: [0, 360, 0] }}
-            transition={{ repeat: Infinity, duration: 10 }}
-          />
-        </div>
         <div className="relative z-10 text-center">
-          <h1 className="text-5xl font-extrabold">
+          <h1 className=" text-xl md:text-4xl font-extrabold">
             Empower Your Life with <span className="text-orange-200">Vahlay Astro</span>
           </h1>
           <p className="mt-6 text-lg max-w-3xl mx-auto">
@@ -71,7 +64,7 @@ const Consulting = () => {
         <img
           src="/assets/elements2.png"
           alt="Astrology Chart"
-          className="absolute w-96 h-96 opacity-80 animate-slowspin top-0 right-0  "
+          className="absolute w-96 h-96 opacity-80 animate-slowspin top-0 right-0 md:block hidden   "
         />
       </section>
 
@@ -79,7 +72,7 @@ const Consulting = () => {
       <section className="py-16 bg-white relative">
       <div className="max-w-7xl mx-auto px-6 lg:px-16">
         {/* Section Title */}
-        <h2 className="text-4xl font-extrabold text-gray-900 text-center mb-12">
+        <h2 className="text-xl md:text-4xl font-extrabold text-gray-900 text-center mb-12">
           Explore Our Consulting Services
         </h2>
 
@@ -100,7 +93,7 @@ const Consulting = () => {
 
               {/* Service Content */}
               <div className="p-6 space-y-4">
-                <h3 className="text-2xl font-bold text-red-600">
+                <h3 className="text-lg md:text-2xl font-bold text-red-600">
                   {service.title}
                 </h3>
                 <p className="text-gray-600">{service.description}</p>
@@ -124,7 +117,7 @@ const Consulting = () => {
       {/* Redesigned Testimonials Section */}
 <section className="bg-gradient-to-b from-red-50 to-white py-20">
   <div className="max-w-7xl mx-auto px-6 lg:px-16">
-    <h2 className="text-4xl font-bold text-center text-gray-800 mb-12">
+    <h2 className="text-xl md:text-4xl font-bold text-center text-gray-800 mb-12">
       What Our Clients Say
     </h2>
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -150,10 +143,10 @@ const Consulting = () => {
       {/* Final Call-to-Action Section */}
       <section className="py-20 bg-gradient-to-r from-red-600 via-red-700 to-red-600 text-white text-center">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-4xl font-bold mb-6">
+          <h2 className="text-xl md:text-4xl font-bold mb-6">
             Ready to Align with the Stars?
           </h2>
-          <p className="text-lg mb-6">
+          <p className=" mb-6">
             Book your personalized consultation today and step into a world of clarity, purpose, and balance.
           </p>
           <Link to="/appointment">

@@ -360,11 +360,11 @@ const Enrollment = () => {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-red-100 via-white to-orange-100 py-16">
+    <div className="min-h-screen bg-gradient-to-b from-red-100 via-white to-orange-100 py-16 text-sm">
 
       <div className="min-h-screen flex justify-center items-center">
         <div className="bg-white border border-red-600 rounded-xl shadow-lg max-w-lg w-full p-8">
-          <h1 className="text-3xl font-bold text-center text-red-600">Enroll in a Course</h1>
+          <h1 className="text-xl md:text-4xl  font-bold text-center text-red-600">Enroll in a Course</h1>
           <p className="text-center text-red-500 mb-6">
             Join our course and explore the wonders of astrology.
           </p>
@@ -397,14 +397,14 @@ const Enrollment = () => {
             </div>
 
             <div>
-              <label className="block text-red-600 font-medium">Email</label>
+              <label className="block text-red-600 ">Email</label>
               <input
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="Enter your email"
-                className="w-full border border-red-300 rounded px-3 py-2 focus:ring-red-500 focus:outline-none"
+                className="w-full border text-xs border-red-300 rounded px-3 py-2 focus:ring-red-500 focus:outline-none"
               />
             </div>
 
@@ -433,7 +433,7 @@ const Enrollment = () => {
                 value={formData.course}
                 onChange={handleChange}
                 disabled //  Prevents changing course since it's already selected
-                className="w-full border border-red-300 rounded px-3 py-2 bg-gray-100 cursor-not-allowed"
+                className="w-full border border-red-300 rounded px-3 py-2 bg-gray-100 cursor-not-allowed text-xs"
               >
                 {courses
                   .filter((course) => course.id === formData.course) //  Show only the selected course
@@ -461,7 +461,7 @@ const Enrollment = () => {
             </div>
 
 
-            <div className="flex justify-center mt-4">
+            <div className="flex justify-center mt-4 ">
               <ReCAPTCHA
                 sitekey={recaptchaSiteKey}
                 onChange={(value) => setRecaptchaValue(value)}

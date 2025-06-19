@@ -1,478 +1,317 @@
-// import React, { useState, useEffect, useRef } from "react";
-// import { db } from "../../firebaseConfig";
-// import { collection, addDoc, getDocs, deleteDoc, doc, query, where } from "firebase/firestore";
-// import gsap from "gsap";
-// import Admin from "./Admin";
+// src/components/ScheduleMeeting.jsx
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../../firebaseConfig'; // Adjust this path based on your Firebase config
+import Admin from './Admin';
+import Draggable from 'react-draggable';
 
-// const App = () => {
-//     const [meetingLink, setMeetingLink] = useState(null);
-//     const [meetings, setMeetings] = useState([]);
-//     const containerRef = useRef(null);
-//     const [waitingApproval, setWaitingApproval] = useState(false); // 🔹 NEW STATE
+const ScheduleMeeting = () => {
+  // State for meeting fields
+  const [subject, setSubject] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [duration, setDuration] = useState(30);
+  const [meetings, setMeetings] = useState([]);
+  const [iframeUrl, setIframeUrl] = useState('');
+  const [showIframe, setShowIframe] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  // State for courses fetched from Firebase
+  const [courses, setCourses] = useState([]);
+  const [selectedCourse, setSelectedCourse] = useState('');
 
+  // Fetch courses (free & paid) from Firebase on mount
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        // Fetch all paid courses
+        const paidSnapshot = await getDocs(collection(db, 'paidCourses'));
+        // Fetch all free courses
+        const freeSnapshot = await getDocs(collection(db, 'freeCourses'));
 
-//     useEffect(() => {
-//         gsap.fromTo(containerRef.current, { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.8 });
-//         fetchMeetings();
-//     }, []);
+        const coursesData = [];
 
-//     // Authenticate with Backend
-//     const authenticate = async () => {
-//         try {
-//             const response = await fetch("http://localhost:5000/meeting/authenticate");
-//             const data = await response.json();
-//             alert(data.message);
-//         } catch (error) {
-//             console.error("Error authenticating:", error);
-//             alert("Failed to authenticate.");
-//         }
-//     };
-
-//     // Create a new meeting
-//     const createMeeting = async () => {
-//         try {
-//             const response = await fetch("http://localhost:5000/meeting/create", {
-//                 method: "POST",
-//                 headers: { "Content-Type": "application/json" }
-//             });
-
-//             if (!response.ok) {
-//                 throw new Error(`HTTP error! Status: ${response.status}`);
-//             }
-
-//             const data = await response.json();
-//             const meetingURL = data.meetingLink;
-//             setMeetingLink(meetingURL);
-//             setWaitingApproval(true); // 🔹 Show waiting message
-
-
-//             // Store meeting in Firestore with timestamp
-//             const docRef = await addDoc(collection(db, "meetings"), {
-//                 link: meetingURL,
-//                 createdAt: new Date()
-//             });
-
-//             console.log("Meeting saved:", docRef.id);
-//             fetchMeetings();
-//         } catch (error) {
-//             console.error("Error creating meeting:", error);
-//             alert("Failed to create meeting.");
-//         }
-//     };
-
-//     // Fetch meetings from Firestore
-//     const fetchMeetings = async () => {
-//         const querySnapshot = await getDocs(collection(db, "meetings"));
-//         const meetingsData = querySnapshot.docs.map(doc => ({ id: doc.id, link: doc.data().link }));
-//         setMeetings(meetingsData);
-//     };
-
-//     // Delete expired meetings
-//     const deleteOldMeetings = async () => {
-//         const now = new Date();
-//         const oldMeetingsQuery = query(collection(db, "meetings"), where("createdAt", "<", new Date(now.getTime() - 24 * 60 * 60 * 1000)));
-
-//         const querySnapshot = await getDocs(oldMeetingsQuery);
-//         querySnapshot.forEach(async (doc) => {
-//             await deleteDoc(doc.ref);
-//             console.log("Deleted expired meeting:", doc.id);
-//         });
-
-//         fetchMeetings();
-//     };
-
-//     useEffect(() => {
-//         deleteOldMeetings();
-//     }, []);
-
-//     return (
-//       <div className="flex flex-col md:flex-row min-h-screen bg-white">
-//       {/* Sidebar - Always visible on desktop and mobile */}
-//       <div className="w-full md:w-1/4 bg-white shadow-md">
-//         <Admin />
-//       </div>
-
-//             {/* Main Content */}
-//             <main className="w-3/4 p-8" ref={containerRef}>
-//                 <h1 className="text-4xl font-bold mb-6">RingCentral Video Meeting</h1>
-
-//                 <button onClick={createMeeting} className="w-full bg-green-500 hover:bg-green-600 p-3 rounded">
-//                     Create Meeting
-//                 </button>
-
-//                 {meetingLink && (
-//                     <div className="mt-6 bg-gray-800 p-4 rounded-lg shadow-lg">
-//                         <p className="text-lg">
-//                             🔗 <a href={meetingLink} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">{meetingLink}</a>
-//                         </p>
-
-//                         {waitingApproval && (
-//                             <p className="text-yellow-400 mt-2">⚠ Waiting for Admin Approval...</p> // 🔹 NEW MESSAGE
-//                         )}
-
-//                     </div>
-//                 )}
-
-//                 {/* List of Active Meetings */}
-//                 <div className="mt-8">
-//                     <h2 className="text-2xl font-semibold mb-4">Active Meetings</h2>
-//                     {meetings.length > 0 ? (
-//                         <ul className="bg-gray-800 p-4 rounded-lg">
-//                             {meetings.map(meeting => (
-//                                 <li key={meeting.id} className="border-b border-gray-700 py-2">
-//                                     <a href={meeting.link} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">{meeting.link}</a>
-//                                 </li>
-//                             ))}
-//                         </ul>
-//                     ) : (
-//                         <p className="text-gray-400">No active meetings found.</p>
-//                     )}
-//                 </div>
-//             </main>
-//         </div>
-//     );
-// };
-
-// export default App;
-
-
-
-
-
-
-
-
-import React, { useState, useEffect, useRef } from "react";
-import { db } from "../../firebaseConfig";
-import { collection, addDoc, getDocs, deleteDoc, doc, query, where } from "firebase/firestore";
-import gsap from "gsap";
-import Admin from "./Admin";
-
-const App = () => {
-    const [meetingLink, setMeetingLink] = useState(null);
-    const [meetings, setMeetings] = useState([]);
-    const containerRef = useRef(null);
-    const [waitingApproval, setWaitingApproval] = useState(false); // 🔹 NEW STATE
-
-
-    useEffect(() => {
-        gsap.fromTo(containerRef.current, { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.8 });
-        fetchMeetings();
-    }, []);
-
-    // Authenticate with Backend
-    const authenticate = async () => {
-        try {
-            const response = await fetch("https://backend-7e8f.onrender.com/meeting/authenticate");
-            const data = await response.json();
-            alert(data.message);
-        } catch (error) {
-            console.error("Error authenticating:", error);
-            alert("Failed to authenticate.");
-        }
-    };
-
-
-    const checkHostStatus = async (meetingId) => {
-        try {
-            const response = await fetch(`https://backend-7e8f.onrender.com/meeting/status/${meetingId}`);
-            const data = await response.json();
-
-            if (data.isAssistantHost) {
-                alert("✅ You are the host of this meeting!");
-            } else {
-                alert("⚠ You are a participant, not the host.");
-            }
-        } catch (error) {
-            console.error("Error checking host status:", error);
-        }
-    };
-
-    // Create a new meeting
-    const createMeeting = async () => {
-        try {
-            const response = await fetch("https://backend-7e8f.onrender.com/meeting/create", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            const meetingURL = data.meetingLink;
-            const urlParts = meetingURL.split('/');
-            const meetingId = urlParts[urlParts.length - 1]; // Extract Meeting ID
-
-            setMeetingLink(meetingURL);
-            setWaitingApproval(true);
-
-            await addDoc(collection(db, "meetings"), {
-                link: meetingURL,
-                meetingId: meetingId, // Store meeting ID separately
-                createdAt: new Date()
-            });
-
-            fetchMeetings();
-        } catch (error) {
-            console.error("Error creating meeting:", error);
-            alert("Failed to create meeting.");
-        }
-    };
-
-
-
-    const handleJoinMeeting = (meetingLink) => {
-        const urlParts = meetingLink.split('/');
-        const meetingId = urlParts[urlParts.length - 1]; // Extracts Meeting ID from URL
-        console.log("joined")
-
-        checkHostStatus(meetingId);
-        window.open(meetingLink, "_blank");
-    };
-
-
-
-    // Fetch meetings from Firestore
-    const fetchMeetings = async () => {
-        const querySnapshot = await getDocs(collection(db, "meetings"));
-        const meetingsData = querySnapshot.docs.map(doc => ({ id: doc.id, link: doc.data().link }));
-        setMeetings(meetingsData);
-    };
-
-    // Delete expired meetings
-    const deleteOldMeetings = async () => {
-        const now = new Date();
-        const oldMeetingsQuery = query(collection(db, "meetings"), where("createdAt", "<", new Date(now.getTime() - 24 * 60 * 60 * 1000)));
-
-        const querySnapshot = await getDocs(oldMeetingsQuery);
-        querySnapshot.forEach(async (doc) => {
-            await deleteDoc(doc.ref);
-            console.log("Deleted expired meeting:", doc.id);
+        // Push all paid courses into coursesData
+        paidSnapshot.forEach((doc) => {
+          coursesData.push({
+            id: doc.id,
+            ...doc.data(),
+            type: 'paid', // Mark them as paid if not already in doc
+          });
         });
 
-        fetchMeetings();
+        // Push all free courses into coursesData
+        freeSnapshot.forEach((doc) => {
+          coursesData.push({
+            id: doc.id,
+            ...doc.data(),
+            type: 'free', // Mark them as free if not already in doc
+          });
+        });
+
+        setCourses(coursesData);
+      } catch (error) {
+        console.error('Error fetching courses:', error);
+      }
     };
 
-    useEffect(() => {
-        deleteOldMeetings();
-    }, []);
+    fetchCourses();
+  }, []);
 
-    return (
-        <div className="flex flex-col md:flex-row min-h-screen bg-white">
-            {/* Sidebar - Always visible on desktop and mobile */}
-            <div className="w-full md:w-1/4 bg-white shadow-md">
-                <Admin />
+  const fetchMeetings = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, "meetings"));
+      const meetings = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      console.log("Meetings:", meetings);
+      setMeetings(meetings); // optional: save to state
+    } catch (error) {
+      console.error("Error fetching meetings:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchMeetings();
+  }, [])
+
+  // Call this on link click
+  const handleOpenPopup = (url) => {
+    setIframeUrl(url);
+    setShowIframe(true);
+    setIsFullscreen(false);
+
+    // Save to localStorage
+    localStorage.setItem('liveMeeting', JSON.stringify({
+      url,
+      isFullscreen: false,
+    }));
+  };
+
+
+  // Close iframe popup
+  const handleClosePopup = () => {
+    setShowIframe(false);
+    setIframeUrl('');
+    setIsFullscreen(false);
+
+    // Remove from localStorage
+    localStorage.removeItem('liveMeeting');
+  };
+
+  useEffect(() => {
+    const saved = localStorage.getItem('liveMeeting');
+    if (saved) {
+      const { url, isFullscreen } = JSON.parse(saved);
+      setIframeUrl(url);
+      setShowIframe(true);
+      setIsFullscreen(isFullscreen || false);
+    }
+  }, []);
+
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      // 1) Schedule the meeting
+      const response = await axios.post('http://localhost:5000/api/create-room', {
+        courseId: selectedCourse,
+        subject,
+        startTime: startDate,  // Backend still expects startTime
+        duration,
+      });
+
+      console.log('Meeting scheduled:', response.data.meeting);
+
+      // 2) Save to Firestore
+      await addDoc(collection(db, 'meetings'), {
+        courseId: selectedCourse,
+        subject,
+        startDate, // Save new key
+        duration,
+        ringCentralMeeting: response.data.meeting,
+        createdAt: serverTimestamp(),
+      });
+
+      // 3) Reset form / show success
+      setSubject('');
+      setStartDate('');
+      setDuration(30);
+      setSelectedCourse('');
+      alert('Meeting scheduled and saved to Firestore!');
+    } catch (error) {
+      console.error('Error scheduling meeting:', error);
+      alert('Failed to schedule meeting. See console for details.');
+    }
+  };
+
+
+
+  return (
+    <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">
+      {/* Sidebar */}
+      <aside className="w-full md:w-1/6 bg-white shadow-md p-4">
+        <Admin />
+      </aside>
+
+      {/* Main content wrapper */}
+      <main className="flex-1 p-6 space-y-6 overflow-y-auto">
+        {/* Schedule Form */}
+        <div className="bg-white p-6 rounded-lg shadow-md max-w-3xl mx-auto">
+          <h1 className="text-3xl font-bold text-center text-red-600 mb-6">
+            📅 Schedule RingCentral Meeting
+          </h1>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Course Dropdown */}
+            <div>
+              <label className="block text-gray-700 font-medium mb-1">Select Course</label>
+              <select
+                value={selectedCourse}
+                onChange={(e) => setSelectedCourse(e.target.value)}
+                className="w-full border border-gray-300 rounded-md p-2 focus:ring-red-500 focus:border-red-500"
+                required
+              >
+                <option value="">Select a course</option>
+                {courses.map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {course.title} {course.type ? `(${course.type})` : ''}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            {/* Main Content */}
-            <main className="w-3/4 p-8" ref={containerRef}>
-                <h1 className="text-4xl font-bold mb-6">RingCentral Video Meeting</h1>
+            {/* Meeting Title */}
+            <div>
+              <label className="block text-gray-700 font-medium mb-1">Meeting Title</label>
+              <input
+                type="text"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="Enter meeting title"
+                className="w-full border border-gray-300 rounded-md p-2 focus:ring-red-500 focus:border-red-500"
+                required
+              />
+            </div>
 
-                <button onClick={createMeeting} className="w-full bg-green-500 hover:bg-green-600 p-3 rounded">
-                    Create Meeting
-                </button>
+            {/* Date and Time */}
+            {/* Meeting Date */}
+            <div>
+              <label className="block text-gray-700 font-medium mb-1">Meeting Date</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full border border-gray-300 rounded-md p-2 focus:ring-red-500 focus:border-red-500"
+                required
+              />
+            </div>
 
-                {meetingLink && (
-                    <div className="mt-6 bg-gray-800 p-4 rounded-lg shadow-lg">
-                        <p className="text-lg">
-                            🔗 <a href={meetingLink} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">{meetingLink}</a>
-                        </p>
 
-                        {waitingApproval && (
-                            <p className="text-yellow-400 mt-2">⚠ Waiting for Admin Approval...</p> // 🔹 NEW MESSAGE
-                        )}
+            {/* Duration */}
+            <div>
+              <label className="block text-gray-700 font-medium mb-1">Duration (minutes)</label>
+              <input
+                type="number"
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                className="w-full border border-gray-300 rounded-md p-2 focus:ring-red-500 focus:border-red-500"
+                required
+              />
+            </div>
 
-                    </div>
-                )}
-
-                {/* List of Active Meetings */}
-                <div className="mt-8">
-                    <h2 className="text-2xl font-semibold mb-4">Active Meetings</h2>
-                    {meetings.length > 0 ? (
-                        <ul className="bg-gray-800 p-4 rounded-lg">
-                            {meetings.map(meeting => (
-                                <li key={meeting.id} className="border-b border-gray-700 py-2">
-                                    <a href="#" onClick={() => handleJoinMeeting(meeting.link)} className="text-blue-400 hover:underline">
-                                        {meeting.link}
-                                    </a>
-                                </li>
-                            ))}
-
-                        </ul>
-                    ) : (
-                        <p className="text-gray-400">No active meetings found.</p>
-                    )}
-                </div>
-            </main>
+            <button
+              type="submit"
+              className="w-full bg-red-600 text-white font-bold py-2 px-4 rounded-md hover:bg-red-700 transition"
+            >
+              Schedule Meeting
+            </button>
+          </form>
         </div>
-    );
+
+        {/* Meeting List */}
+        <div className="bg-white p-6 rounded-lg shadow-md max-w-4xl mx-auto">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Scheduled Meetings</h2>
+
+          {meetings.length === 0 ? (
+            <p className="text-gray-500">No meetings scheduled yet.</p>
+          ) : (
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+              {meetings.map((meeting) => (
+                <div
+                  key={meeting.id}
+                  className="border rounded-lg p-4 shadow hover:shadow-md transition bg-white"
+                >
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-lg font-semibold text-red-600">{meeting.subject}</h3>
+                    <span className="text-sm bg-red-100 text-red-700 px-2 py-0.5 rounded">
+                      {meeting.duration} mins
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    🕒 <strong>Start:</strong>{' '}
+                    {new Date(meeting.startTime).toLocaleString()}
+                  </p>
+                  {meeting.ringCentralMeeting?.roomUrl && (
+                    <button
+                      onClick={() => handleOpenPopup(meeting.ringCentralMeeting.roomUrl)}
+                      className="mt-3 inline-block text-sm bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded shadow transition"
+                    >
+                      Join Meeting
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Draggable Iframe Popup */}
+        {showIframe && (
+          <div className="fixed top-0 left-0 z-50 w-full h-full pointer-events-none">
+            <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
+              <Draggable handle=".drag-header">
+                <div
+                  className={`pointer-events-auto flex flex-col bg-white shadow-lg rounded-md overflow-hidden transition-all duration-300 ${isFullscreen
+                      ? 'w-screen h-screen'
+                      : 'w-[95vw] h-[80vh] md:w-[700px] md:h-[500px]'
+                    }`}
+                >
+                  {/* Header */}
+                  <div className="drag-header bg-red-600 text-white flex justify-between items-center px-4 py-2 cursor-move">
+                    <span className="font-bold">🔴 Live Meeting</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setIsFullscreen(!isFullscreen)}
+                        className="bg-white text-red-600 px-3 py-1 rounded text-sm font-semibold"
+                      >
+                        {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+                      </button>
+                      <button
+                        onClick={handleClosePopup}
+                        className="bg-white text-red-600 px-3 py-1 rounded text-sm font-semibold"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Iframe */}
+                  <iframe
+                    src={iframeUrl}
+                    title="Meeting"
+                    className="w-full flex-grow"
+                    allow="camera; microphone; fullscreen"
+                  ></iframe>
+                </div>
+              </Draggable>
+            </div>
+          </div>
+        )}
+
+      </main>
+    </div>
+
+  );
 };
 
-export default App;
-
-
-
-
-
-
-
-
-// import React, { useState, useEffect, useCallback } from "react";
-// import { db } from "../../firebaseConfig";
-// import { collection, addDoc, getDocs, doc, updateDoc, query, where } from "firebase/firestore";
-
-// const App = () => {
-//     const [meetings, setMeetings] = useState([]);
-//     const [loading, setLoading] = useState(false);
-//     const [error, setError] = useState(null);
-
-//     const fetchMeetings = useCallback(async () => {
-//         try {
-//             const q = query(
-//                 collection(db, "meetings"), 
-//                 where("active", "==", true)
-//             );
-//             const snapshot = await getDocs(q);
-//             const meetingsData = snapshot.docs.map(doc => ({
-//                 id: doc.id,
-//                 ...doc.data(),
-//                 createdAt: doc.data().createdAt.toDate()
-//             }));
-//             setMeetings(meetingsData);
-//         } catch (err) {
-//             setError("Failed to load meetings");
-//         }
-//     }, []);
-
-//     useEffect(() => {
-//         fetchMeetings();
-//     }, [fetchMeetings]);
-
-//     const createMeeting = async () => {
-//         setLoading(true);
-//         setError(null);
-        
-//         try {
-//             const controller = new AbortController();
-//             const timeoutId = setTimeout(() => controller.abort(), 45000);
-
-//             const response = await fetch("http://localhost:5000/meeting/create", {
-//                 method: "POST",
-//                 headers: { "Content-Type": "application/json" },
-//                 signal: controller.signal
-//             });
-            
-//             clearTimeout(timeoutId);
-
-//             if (!response.ok) {
-//                 const errorData = await response.json();
-//                 throw new Error(errorData.message || 'Meeting creation failed');
-//             }
-
-//             const data = await response.json();
-            
-//             await addDoc(collection(db, "meetings"), {
-//                 link: data.meetingLink,
-//                 meetingId: data.meetingId,
-//                 createdAt: new Date(),
-//                 active: true,
-//                 expiration: data.expiration
-//             });
-
-//             await fetchMeetings();
-
-//         } catch (err) {
-//             setError(err.message || 'Failed to create meeting');
-//             if (err.name === 'AbortError') {
-//                 setError('Request timed out. Please try again.');
-//             }
-//         } finally {
-//             setLoading(false);
-//         }
-//     };
-
-//     const endMeeting = async (meetingId) => {
-//         try {
-//             const response = await fetch(
-//                 `http://localhost:5000/meeting/end/${meetingId}`,
-//                 { method: "DELETE" }
-//             );
-
-//             if (!response.ok) {
-//                 throw new Error('Failed to end meeting');
-//             }
-
-//             await updateDoc(doc(db, "meetings", meetingId), {
-//                 active: false,
-//                 endedAt: new Date()
-//             });
-
-//             await fetchMeetings();
-
-//         } catch (err) {
-//             setError(err.message || 'Failed to end meeting');
-//         }
-//     };
-
-//     return (
-//         <div className="container mx-auto p-4">
-//             <div className="max-w-2xl mx-auto">
-//                 <h1 className="text-2xl font-bold mb-6">Meeting Manager</h1>
-
-//                 <button 
-//                     onClick={createMeeting}
-//                     disabled={loading}
-//                     className={`w-full py-2 px-4 mb-6 rounded ${
-//                         loading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700 text-white'
-//                     }`}
-//                 >
-//                     {loading ? 'Creating Meeting...' : 'Create New Meeting'}
-//                 </button>
-
-//                 {error && (
-//                     <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
-//                         Error: {error}
-//                     </div>
-//                 )}
-
-//                 <div className="space-y-4">
-//                     <h2 className="text-xl font-semibold mb-3">Active Meetings</h2>
-                    
-//                     {meetings.length === 0 ? (
-//                         <p className="text-gray-600">No active meetings found</p>
-//                     ) : (
-//                         meetings.map(meeting => (
-//                             <div key={meeting.id} className="p-4 border rounded-lg shadow-sm">
-//                                 <div className="flex justify-between items-center">
-//                                     <div>
-//                                         <a
-//                                             href={meeting.link}
-//                                             target="_blank"
-//                                             rel="noopener noreferrer"
-//                                             className="text-blue-600 hover:underline"
-//                                         >
-//                                             Join Meeting
-//                                         </a>
-//                                         <p className="text-sm text-gray-500 mt-1">
-//                                             Created: {meeting.createdAt.toLocaleString()}
-//                                         </p>
-//                                     </div>
-//                                     <button
-//                                         onClick={() => endMeeting(meeting.meetingId)}
-//                                         className="px-3 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200"
-//                                     >
-//                                         End Meeting
-//                                     </button>
-//                                 </div>
-//                             </div>
-//                         ))
-//                     )}
-//                 </div>
-//             </div>
-//         </div>
-//     );
-// };
-
-// export default App;
+export default ScheduleMeeting;

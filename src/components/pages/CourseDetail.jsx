@@ -5,21 +5,21 @@ import { doc, getDoc } from "firebase/firestore";
 import { useParams } from "react-router-dom";
 import { RiShareForwardFill } from "react-icons/ri"; // Share icon
 import { FaFacebookF, FaTwitter, FaLinkedinIn, FaWhatsapp, FaEnvelope, FaTelegram, FaRedditAlien, FaPinterestP } from "react-icons/fa";
- 
- 
- 
+
+
+
 const CourseDetail = () => {
   const [courseData, setCourseData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showShareOptions, setShowShareOptions] = useState(false);
- 
+
   const location = useLocation();
   const navigate = useNavigate();
- 
- 
+
+
   const { courseId, courseType } = useParams()
- 
- 
+
+
   useEffect(() => {
     const fetchCourseDetails = async () => {
       if (!courseId || !courseType) {
@@ -27,7 +27,7 @@ const CourseDetail = () => {
         navigate("/");
         return;
       }
- 
+
       try {
         const courseRef = doc(
           db,
@@ -35,7 +35,7 @@ const CourseDetail = () => {
           courseId
         );
         const courseSnap = await getDoc(courseRef);
- 
+
         if (courseSnap.exists()) {
           setCourseData({ id: courseId, type: courseType, ...courseSnap.data() });
         } else {
@@ -50,11 +50,11 @@ const CourseDetail = () => {
         setLoading(false);
       }
     };
- 
+
     fetchCourseDetails();
   }, [courseId, courseType, navigate]);
- 
- 
+
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -62,42 +62,43 @@ const CourseDetail = () => {
       </div>
     );
   }
- 
+
   if (!courseData) {
     return <div className="text-center mt-10 text-red-500">Course not found.</div>;
   }
- 
-    // Function to share the article
-    const currentUrl = window.location.href;
-    const imageUrl = courseData.imageUrl || "/assets/default-course.jpg";
-    const shareText = `Check out this course: ${courseData.title} - ${courseData.Subtitle}`;
- 
-    const shareArticle = () => {
-      if (navigator.share) {
-        navigator
-          .share({
-            title: courseData.title,
-            text: shareText,
-            url: currentUrl
-          })
-          .then(() => console.log("Course shared successfully!"))
-          .catch((error) => console.error("Error sharing course:", error));
-      } else {
-        setShowShareOptions(!showShareOptions);
-      }
-    };
+
+  // Function to share the article
+  const currentUrl = window.location.href;
+  const imageUrl = courseData.imageUrl || "/assets/default-course.jpg";
+  const shareText = `Check out this course: ${courseData.title} - ${courseData.Subtitle}`;
+
+  const shareArticle = () => {
+    if (navigator.share) {
+      navigator
+        .share({
+          title: courseData.title,
+          text: shareText,
+          url: currentUrl
+        })
+        .then(() => console.log("Course shared successfully!"))
+        .catch((error) => console.error("Error sharing course:", error));
+    } else {
+      setShowShareOptions(!showShareOptions);
+    }
+  };
   return (
-    <div>
+    <div className=" text-sm ">
       {/* Hero Section */}
       <section
         className="bg-white"
         style={{ backgroundImage: "url('/assets/Screenshot 2024-11-28 211019.png')" }}
       >
- 
-<div className="p-4">
-<button
+
+        <div className="p-4">
+          <button
             onClick={shareArticle}
-            className="flex items-center justify-center space-x-2 text-white bg-red-600 px-4 py-2 rounded-md shadow-md hover:bg-red-700 w-6/9 sm:w-auto sm:px-6 sm:py-3"
+            className="flex items-center justify-center space-x-2 text-white bg-red-600 px-2
+             py-1 rounded-md shadow-md hover:bg-red-700 w-6/9 sm:w-auto "
           >
             <RiShareForwardFill className="text-lg sm:text-xl " />
             <span className="hidden sm:inline text-sm sm:text-base">Share</span>
@@ -118,7 +119,7 @@ const CourseDetail = () => {
         <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center">
           {/* Left Content */}
           <div className="space-y-4 md:w-2/3 ">
-            <h1 className="text-3xl md:text-4xl font-bold text-red-900">
+            <h1 className="text-xl md:text-4xl  font-bold text-red-900">
               {courseData.title || "No Title"}
             </h1>
             <p className="text-red-600 text-lg">
@@ -130,7 +131,7 @@ const CourseDetail = () => {
               </p>
             </div>
           </div>
- 
+
           {/* Right Content - Image */}
           <div className="mt-6 md:mt-0 md:w-1/3">
             <img
@@ -140,113 +141,146 @@ const CourseDetail = () => {
           </div>
         </div>
       </section>
- 
-      {/* Bottom Info Section */}
-      <div className="bg-red-600 relative flex">
-        {/* Left Section */}
-        <div className="w-3/4 py-6 relative">
-          <div className="max-w-4xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center space-x-3">
-              <div className="text-white">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                  stroke="currentColor"
-                  className="w-8 h-8"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 6v6l3 3m6-6a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
+
+      <div className="relative bg-red-600 text-white overflow-hidden">
+        {/* Top wave background (optional). You can adjust the path or fill as needed */}
+        <svg
+          className="absolute top-0 left-0 w-full h-48 -z-10"
+          viewBox="0 0 1440 320"
+          preserveAspectRatio="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            fill="#ffffff"
+            fillOpacity="0.2"
+            d="M0,32L80,42.7C160,53,320,75,480,80C640,85,800,75,960,85.3C1120,96,1280,128,1360,144L1440,160L1440,0L1360,0C1280,0,1120,0,960,0C800,0,640,0,480,0C320,0,160,0,80,0L0,0Z"
+          />
+        </svg>
+
+        {/* Main content container */}
+        <div className="relative max-w-6xl mx-auto px-6 py-8 md:py-12">
+          {/* Title (optional) */}
+          {/* <h2 className="text-2xl md:text-3xl font-bold mb-6">
+          Course Highlights
+        </h2> */}
+
+          {/* Features + Button Layout */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-6 md:space-y-0">
+            {/* Features */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
+              {/* Feature Card 1 */}
+              <div className="bg-white bg-opacity-10 rounded-lg p-4 flex items-center space-x-3">
+                <div>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                    className="w-10 h-10"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 6v6l3 3m6-6a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <p className="font-bold text-lg">24 sessions</p>
+                  <p className="text-sm">Q+A session Extra</p>
+                </div>
               </div>
-              <div>
-                <p className="text-white font-bold text-lg">24 sessions</p>
-                <p className="text-white text-sm">Q+A session Extra</p>
+
+              {/* Feature Card 2 */}
+              <div className="bg-white bg-opacity-10 rounded-lg p-4 flex items-center space-x-3">
+                <div>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                    className="w-10 h-10"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15.75 9a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 18.75a8.25 8.25 0 0115 0"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <p className="font-bold text-lg">Self-paced</p>
+                  <p className="text-sm">Progress at your own speed</p>
+                </div>
+              </div>
+
+              {/* Feature Card 3 */}
+              <div className="bg-white bg-opacity-10 rounded-lg p-4 flex items-center space-x-3">
+                <div>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                    className="w-10 h-10"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 8c-2.25 0-4 1.567-4 3.5S9.75 15 12 15m0 0c2.25 0 4-1.567 4-3.5S14.25 8 12 8zm0 0V6m0 9v2"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <p className="font-bold text-lg">
+                    {courseData.type || 'Paid'}
+                  </p>
+                  <p className="text-sm">Please Enroll</p>
+                </div>
               </div>
             </div>
- 
-            <div className="flex items-center space-x-3 mt-4 md:mt-0">
-              <div className="text-white">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                  stroke="currentColor"
-                  className="w-8 h-8"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15.75 9a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 18.75a8.25 8.25 0 0115 0"
-                  />
-                </svg>
-              </div>
-              <div>
-                <p className="text-white font-bold text-lg">Self-paced</p>
-                <p className="text-white text-sm">Progress at your own speed</p>
-              </div>
-            </div>
- 
-            <div className="flex items-center space-x-3 mt-4 md:mt-0">
-              <div className="text-white">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                  stroke="currentColor"
-                  className="w-8 h-8"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 8c-2.25 0-4 1.567-4 3.5S9.75 15 12 15m0 0c2.25 0 4-1.567 4-3.5S14.25 8 12 8zm0 0V6m0 9v2"
-                  />
-                </svg>
-              </div>
-              <div>
-                <p className="text-white font-bold text-lg">{courseData.type || "Unknown"}</p>
-                <p className="text-white text-sm">Please Enroll</p>
-              </div>
+
+            {/* Enroll Button */}
+            <div className="text-center md:text-right">
+              <Link
+                to={
+                  courseData.type === 'free'
+                    ? '/enrollfree'
+                    : `/enroll/${courseId}/${courseType}`
+                }
+              >
+                <button className="mt-4 md:mt-0 bg-white bg-opacity-20 hover:bg-opacity-100 text-white hover:text-red-600 font-bold px-10 py-4 text-xl rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 animate-bounce">
+                  {courseData.type === 'free' ? 'Enroll for Free' : 'Enroll Now'}
+                </button>
+              </Link>
             </div>
           </div>
         </div>
- 
- 
-        {/* Right Section */}
-        <Link to={courseData.type === "free" ? `/enrollfree` : `/enroll/${courseId}/${courseType}`}>
-  <button className="mt-6 text-white bg-red-400 px-10 py-4 text-xl rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 hover:bg-red-100 hover:text-red-600 animate-bounce">
-    {courseData.type === "free" ? "Enroll for Free" : "Enroll Now"}
-  </button>
-</Link>
- 
       </div>
- 
- 
+
+
       {/* What You Will Learn Section */}
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-2 gap-10">
           {/* Left - List of Topics */}
           <div>
-            <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center lg:text-left">
+            <h2 className="text-xl md:text-4xl  font-bold text-gray-800 mb-6 text-center lg:text-left">
               What You Will Learn
             </h2>
-            <ul className="list-disc text-lg pl-6 text-red-600 font-bold">
-  {courseData.description?.split(".").map((item, index) =>
-    item.trim() ? <li className="mb-2"key={index}>{item}</li> : null
-  )}
-</ul>
- 
-            <p className="mt-8 text-xl text-center lg:text-left font-semibold text-red-600">
+            <ul className="list-disc  space-y-4 pl-6 text-red-600 font-bold">
+              {courseData.description?.split(".").map((item, index) =>
+                item.trim() ? <li className="mb-2" key={index}>{item}</li> : null
+              )}
+            </ul>
+
+            <p className="mt-8 text-lg text-center lg:text-left font-semibold text-red-600">
               Classes Conducted Twice Weekly - 24 Lectures + Interactive Q&A
             </p>
           </div>
- 
+
           {/* Right - Course Image */}
           <div className="flex justify-center items-center">
             <img
@@ -257,21 +291,21 @@ const CourseDetail = () => {
           </div>
         </div>
       </section>
- 
+
       {/* Why You Should Enroll Section */}
       <section className="bg-red-50 py-16">
         <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">
+          <h2 className="text-xl md:text-4xl  font-bold text-center text-gray-800 mb-8">
             Why You Should Enroll
           </h2>
-          <ul className="mt-4 space-y-4 text-center text-gray-700 text-lg">
+          <ul className="mt-4 space-y-4 text-center text-gray-700 ">
             <li>✔ Learn practical skills in less than 2 hours</li>
             <li>✔ Taught by industry experts</li>
             <li>✔ Hands-on learning with real-world applications</li>
           </ul>
         </div>
       </section>
- 
+
       {/* How You Learn Section */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 text-center">
@@ -284,11 +318,11 @@ const CourseDetail = () => {
           </p>
         </div>
       </section>
- 
+
       {/* Testimonials Section */}
       <section className="bg-gray-50 py-16">
         <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">
+          <h2 className="text-xl md:text-4xl  font-bold text-center text-gray-800 mb-8">
             Why People Choose Us
           </h2>
           <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -321,16 +355,16 @@ const CourseDetail = () => {
           </div>
         </div>
       </section>
- 
- 
+
+
       <Link to={courseData.type === "free" ? `/enrollfree` : `/enroll/${courseId}/${courseType}`}>
-  <button className="mt-6 text-white bg-red-400 px-10 py-4 text-xl rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 hover:bg-red-100 hover:text-red-600 animate-bounce">
-    {courseData.type === "free" ? "Enroll for Free" : "Enroll Now"}
-  </button>
-</Link>
- 
+        <button className="mt-6 text-white bg-red-400 px-10 py-4 text-xl rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 hover:bg-red-100 hover:text-red-600 animate-bounce">
+          {courseData.type === "free" ? "Enroll for Free" : "Enroll Now"}
+        </button>
+      </Link>
+
     </div>
   );
 };
- 
+
 export default CourseDetail;
